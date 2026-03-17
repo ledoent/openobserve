@@ -29,6 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <div class="tw:px-4 tw:flex tw:justify-start">
         <q-tabs v-model="activeTab" inline-label dense @update:model-value="onTabChange">
           <q-tab
+            name="services"
+            :label="t('settings.correlation.discoveredServicesTab')"
+            no-caps
+          />
+          <q-tab
             name="discovery"
             :label="t('settings.correlation.serviceDiscoveryTab')"
             no-caps
@@ -48,14 +53,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </div>
 
     <!-- Scrollable content -->
-    <div class="tw:flex-1 tw:overflow-y-auto tw:px-4 tw:py-4">
+    <div class="tw:flex-1 tw:overflow-y-auto tw:px-4 tw:py-2">
       <div v-if="activeTab === 'discovery'">
         <ServiceIdentitySetup
           :org-identifier="store.state.selectedOrganization.identifier"
+          :semantic-groups="semanticGroups"
           @navigate-to-aliases="onNavigateToAliases"
+          @navigate-to-services="onTabChange('services')"
+          @update-service-fields="onUpdateServiceFields"
         />
-        <q-separator class="tw:my-6" />
-        <DiscoveredServices />
+      </div>
+
+      <div v-if="activeTab === 'services'">
+        <DiscoveredServices @navigate-to-configuration="onTabChange('discovery')" />
       </div>
 
       <OrganizationDeduplicationSettings
@@ -107,17 +117,19 @@ export default defineComponent({
     // URL slug ↔ internal tab name
     const slugToTab: Record<string, string> = {
       "service-discovery": "discovery",
+      "services": "services",
       "alert-correlation": "alert-correlation",
       "field-aliases": "field-aliases",
     };
     const tabToSlug: Record<string, string> = {
       "discovery": "service-discovery",
+      "services": "services",
       "alert-correlation": "alert-correlation",
       "field-aliases": "field-aliases",
     };
 
     const initialSlug = route.params.tab as string;
-    const activeTab = ref(slugToTab[initialSlug] ?? "discovery");
+    const activeTab = ref(slugToTab[initialSlug] ?? "services");
     const aliasScrollToGroup = ref<string | undefined>(
       route.query.group as string | undefined
     );
@@ -164,6 +176,10 @@ export default defineComponent({
 
     const tabs = computed(() => [
       {
+        label: t("settings.correlation.discoveredServicesTab"),
+        value: "services",
+      },
+      {
         label: t("settings.correlation.serviceDiscoveryTab"),
         value: "discovery",
       },
@@ -207,6 +223,20 @@ export default defineComponent({
       }
     };
 
+    const onUpdateServiceFields = async (fields: string[]) => {
+      try {
+        const orgId = store.state.selectedOrganization.identifier;
+        const updated = semanticGroups.value.map((g: any) =>
+          g.id === "service" ? { ...g, fields } : g
+        );
+        await serviceStreamsService.updateSemanticGroups(orgId, updated);
+        semanticGroups.value = updated;
+        q.notify({ type: "positive", message: t("settings.correlation.fieldAliasesSaved") });
+      } catch (_) {
+        q.notify({ type: "negative", message: t("settings.correlation.fieldAliasesSaveError") });
+      }
+    };
+
     const onCorrelationSettingsSaved = () => {
       // Child components handle their own notifications and data refresh
       // No global store update needed as settings are managed via settings v2 API
@@ -220,6 +250,7 @@ export default defineComponent({
       onTabChange,
       onCorrelationSettingsSaved,
       onNavigateToAliases,
+      onUpdateServiceFields,
       onSaveSemanticGroups,
       semanticGroups,
       t,

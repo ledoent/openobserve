@@ -15,14 +15,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 <template>
-  <div class="tw:w-full discovered-services q-mt-sm">
-    <div>
-      <GroupHeader :title="t('settings.correlation.discoveredServicesTitle')" :showIcon="false" class="tw:mb-2" />
-      <div class="text-body2 tw:mb-4">
-        {{ t("settings.correlation.discoveredServicesDescription") }}
-      </div>
-    </div>
-
+  <div class="tw:w-full discovered-services" :class="{ 'ds-dark': store.state.theme === 'dark' }">
     <!-- Loading State -->
     <div v-if="loading" class="tw:flex tw:justify-center tw:py-8">
       <q-spinner-hourglass color="primary" size="30px" />
@@ -34,10 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <div class="text-body1 text-negative">{{ error }}</div>
       <q-btn
         data-test="retry-discovered-services-btn"
-        class="text-bold o2-secondary-button tw:h-[28px] tw:w-[32px] tw:min-w-[32px]!"
-        :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
-        flat
-        :label="t('settings.correlation.retry')"
+        flat no-caps dense
+        label="Retry"
+        icon="refresh"
         @click="loadServices"
       />
     </div>
@@ -51,175 +43,327 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </div>
       <q-btn
         data-test="refresh-discovered-services-btn"
-        class="text-bold o2-secondary-button tw:h-[28px] tw:w-[32px] tw:min-w-[32px]!"
-        :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
-        flat
+        flat no-caps dense
         :label="t('common.refresh')"
+        icon="refresh"
         @click="loadServices(true)"
         :loading="refreshing"
+        class="tw:mt-3"
       />
     </div>
 
     <!-- Services List -->
     <div v-else>
-      <!-- Summary Banner -->
-      <div class="tw:flex tw:items-center tw:justify-between tw:mb-4 tw:p-3 tw:rounded-lg tw:bg-grey-2 dark:tw:bg-grey-9">
-        <div class="tw:flex tw:items-center tw:gap-6">
+      <!-- Info banner -->
+      <div class="tw:mb-3 tw:rounded-lg tw:flex tw:items-center tw:gap-3 tw:px-4 tw:py-3"
+        :style="store.state.theme === 'dark'
+          ? 'background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25)'
+          : 'background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.15)'"
+      >
+        <q-icon name="info" size="20px" class="tw:shrink-0"
+          :color="store.state.theme === 'dark' ? 'blue-4' : 'blue-7'"
+        />
+        <div class="tw:text-sm tw:leading-relaxed"
+          :class="store.state.theme === 'dark' ? 'tw:text-gray-300' : 'tw:text-gray-700'"
+        >
+          {{ t("settings.correlation.discoveredServicesDescription") }}
+          <a
+            class="config-link-btn tw:cursor-pointer tw:inline-block tw:mx-1 tw:px-2 tw:py-0.5 tw:rounded tw:text-xs tw:font-semibold tw:no-underline tw:align-middle"
+            @click.prevent="$emit('navigate-to-configuration')"
+          >Go to Configuration</a>
+          <span>to configure how services are identified and grouped.</span>
+        </div>
+      </div>
+
+      <!-- Header with title -->
+      <div class="card-container tw:mb-[0.625rem]">
+        <div class="tw:flex tw:justify-between tw:items-center tw:w-full tw:py-3 tw:px-4 tw:h-[68px]">
+          <div class="q-table__title tw:font-[600]" data-test="services-list-title">
+            {{ t("settings.correlation.discoveredServicesTitle") }}
+          </div>
+          <!-- Filter bar -->
           <div class="tw:flex tw:items-center tw:gap-2">
-            <q-icon name="miscellaneous_services" size="1.25rem" color="primary" />
-            <span class="tw:font-semibold text-primary">{{ services.length }}</span>
-            <span class="text-caption">{{ t("settings.correlation.services") }}</span>
+            <span class="tw:text-md tw:text-grey-6">Filter by :</span>
+            <q-select
+              v-model="filterKey"
+              :options="filteredKeyOptions"
+              dense
+              borderless
+              clearable
+              use-input
+              fill-input
+              hide-selected
+              input-debounce="0"
+              emit-value
+              map-options
+              placeholder="Select field"
+              data-test="service-filter-key"
+              class="o2-search-input"
+              style="min-width: 160px;"
+              @filter="filterKeyFn"
+              @update:model-value="filterValue = null"
+            />
+            <span>
+              <q-select
+                v-model="filterValue"
+                :options="filteredValueOptions"
+                dense
+                borderless
+                clearable
+                use-input
+                fill-input
+                hide-selected
+                input-debounce="0"
+                emit-value
+                map-options
+                :disable="!filterKey"
+                placeholder="Select value"
+                data-test="service-filter-value"
+                class="o2-search-input"
+                style="min-width: 160px;"
+                @filter="filterValueFn"
+              />
+              <q-tooltip v-if="!filterKey">Select a field first</q-tooltip>
+            </span>
+            <q-input
+              v-model="searchQuery"
+              dense
+              borderless
+              :placeholder="t('settings.correlation.searchServiceName')"
+              data-test="service-search-input"
+              clearable
+              class="o2-search-input"
+            >
+              <template #prepend>
+                <q-icon class="o2-search-input-icon" name="search" />
+              </template>
+            </q-input>
+            <q-btn
+              flat
+              round
+              :loading="refreshing"
+              @click="loadServices(true)"
+              data-test="refresh-discovered-services-btn"
+              class="o2-secondary-button refresh-btn"
+              label="Refresh"
+            />
           </div>
         </div>
-        <q-btn
-          data-test="refresh-discovered-services-btn"
-          class="text-bold o2-secondary-button tw:h-[28px] tw:w-[32px] tw:min-w-[32px]!"
-          :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
-          flat
-          :label="t('common.refresh')"
-          @click="loadServices"
-          :loading="loading"
-        />
       </div>
 
-      <!-- Search -->
-      <div class="tw:flex tw:gap-4 tw:mb-4 tw:items-center">
-        <q-input
-          v-model="searchQuery"
-          dense
-          filled
-          :placeholder="t('settings.correlation.searchServiceName')"
-          class="tw:flex-1"
-          clearable
-        >
-          <template #prepend>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-      </div>
-
-      <!-- Services Table -->
-      <div class="app-table-container">
-        <q-table
-          :rows="filteredServices"
-          :columns="columns"
-          row-key="id"
-          flat
-          dense
-          class="tw:rounded-lg tw:border"
-          v-model:pagination="pagination"
-        >
-          <template #body-cell-service_name="props">
-            <q-td :props="props">
-              <div class="tw:flex tw:flex-col tw:gap-1">
-                <span class="tw:font-medium">{{ props.row.service_name }}</span>
-                <div v-if="Object.keys(props.row.disambiguation).length > 0" class="tw:flex tw:flex-wrap tw:gap-1">
-                  <q-chip
-                    v-for="(value, key) in props.row.disambiguation"
-                    :key="key"
-                    size="10px"
-                    color="grey-4"
-                    text-color="grey-9"
-                    dense
-                    class="tw:font-mono"
-                  >
-                    {{ key }}: {{ value }}
-                  </q-chip>
-                </div>
+      <!-- Grouped Services Table -->
+      <div class="tw:w-full tw:h-full">
+        <div class="tw:h-[calc(100vh-340px)]">
+          <q-table
+            :pagination="{ rowsPerPage: 0 }"
+            :rows="refreshing ? [] : paginatedGroups"
+            :columns="columns"
+            :loading="refreshing"
+            row-key="service_name"
+            hide-pagination
+            style="width: 100%"
+            :style="filteredGroups.length > 0
+              ? 'width: 100%; height: calc(100vh - 340px)'
+              : 'width: 100%'"
+            class="o2-quasar-table o2-row-md o2-quasar-table-header-sticky"
+            data-test="services-list-table"
+          >
+            <!-- Loading state -->
+            <template #loading>
+              <div class="tw:flex tw:items-center tw:justify-center tw:pb-40">
+                <q-spinner-hourglass color="primary" size="3rem" />
               </div>
-            </q-td>
-          </template>
+            </template>
+            <template v-if="refreshing" #no-data>
+              <span></span>
+            </template>
+            <template v-slot:body="props">
+              <!-- Group header row -->
+              <q-tr
+                :props="props"
+                class="group-header-row"
+                data-test="service-group-row"
+                @click="toggleGroup(props.row.service_name)"
+              >
+                <q-td key="service_name" :props="props">
+                  <div class="tw:flex tw:items-center tw:gap-2">
+                    <q-icon
+                      :name="expandedGroups.has(props.row.service_name) ? 'expand_more' : 'chevron_right'"
+                      size="20px"
+                      class="tw:text-gray-400"
+                    />
+                    <span class="tw:font-semibold">{{ props.row.service_name }}</span>
+                    <span class="instance-count-badge">
+                      {{ props.row.instances.length }} {{ props.row.instances.length === 1 ? 'instance' : 'instances' }}
+                    </span>
+                  </div>
+                </q-td>
+                <q-td key="telemetry" :props="props">
+                  <div class="tw:flex tw:gap-1.5 tw:flex-wrap tw:items-center">
+                    <span class="telemetry-badge"
+                      :class="props.row.totalLogs > 0 ? 'telemetry-logs' : 'telemetry-inactive'"
+                    >{{ props.row.totalLogs }} Logs</span>
+                    <span class="telemetry-badge"
+                      :class="props.row.totalTraces > 0 ? 'telemetry-traces' : 'telemetry-inactive'"
+                    >{{ props.row.totalTraces }} Traces</span>
+                    <span class="telemetry-badge"
+                      :class="props.row.totalMetrics > 0 ? 'telemetry-metrics' : 'telemetry-inactive'"
+                    >{{ props.row.totalMetrics }} Metrics</span>
+                  </div>
+                </q-td>
+                <q-td key="last_seen" :props="props" style="text-align: right">
+                  <span class="tw:text-sm"
+                    :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-6'"
+                  >{{ formatRelativeTime(props.row.lastSeen) }}</span>
+                </q-td>
+              </q-tr>
 
-          <template #body-cell-telemetry="props">
-            <q-td :props="props">
-              <div class="tw:flex tw:gap-1 tw:flex-wrap tw:items-center">
-                <q-badge :color="props.row.logs_streams.length > 0 ? 'blue' : 'grey-8'"
-                  :text-color="props.row.logs_streams.length > 0 ? 'white' : 'grey-1'">
-                  {{ props.row.logs_streams.length }} {{ t("settings.correlation.logs") }}
-                </q-badge>
-                <q-badge :color="props.row.traces_streams.length > 0 ? 'orange' : 'grey-8'"
-                  :text-color="props.row.traces_streams.length > 0 ? 'white' : 'grey-1'">
-                  {{ props.row.traces_streams.length }} {{ t("settings.correlation.traces") }}
-                </q-badge>
-                <q-badge :color="props.row.metrics_streams.length > 0 ? 'green' : 'grey-8'"
-                  :text-color="props.row.metrics_streams.length > 0 ? 'white' : 'grey-1'">
-                  {{ props.row.metrics_streams.length }} {{ t("settings.correlation.metrics") }}
-                </q-badge>
+              <!-- Expanded instance rows -->
+              <template v-if="expandedGroups.has(props.row.service_name)">
+                <q-tr
+                  v-for="instance in props.row.instances"
+                  :key="instance.id"
+                  class="instance-row"
+                  data-test="service-instance-row"
+                  @click="selectedService = instance"
+                >
+                  <q-td :colspan="3">
+                    <div class="tw:pl-7 tw:flex tw:items-center tw:gap-3">
+                      <!-- All dimensions in one horizontal line -->
+                      <div class="tw:flex tw:items-center tw:gap-1.5 tw:flex-1 tw:min-w-0">
+                        <span
+                          v-for="[key, value] in Object.entries(instance.disambiguation).sort(([a], [b]) => a.localeCompare(b))"
+                          :key="key"
+                          class="dimension-badge"
+                          :class="getDimensionColorClass(key)"
+                        >
+                          <span class="tw:font-medium">{{ key }}</span>=<span>{{ value }}</span>
+                          <q-tooltip anchor="top middle" self="bottom middle" class="tw:text-xs">
+                            {{ key }} = {{ value }}
+                          </q-tooltip>
+                        </span>
+                      </div>
+                      <span class="tw:text-xs tw:shrink-0"
+                        :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-6'"
+                      >{{ formatRelativeTime(instance.last_seen) }}</span>
+                    </div>
+                  </q-td>
+                </q-tr>
+              </template>
+            </template>
 
-                <!-- Single ⓘ opens detail modal -->
-                <q-btn
-                  flat round dense unelevated
-                  icon="info_outline"
-                  size="9px"
-                  color="grey-6"
-                  class="tw:ml-0.5"
-                  data-test="telemetry-detail-btn"
-                  @click.stop="openStreamDetail(props.row)"
+            <!-- Pagination footer -->
+            <template v-slot:bottom>
+              <div class="bottom-btn tw:flex tw:items-center tw:justify-between tw:w-full tw:h-[36px]">
+                <div class="o2-table-footer-title tw:w-[250px] tw:mr-md">
+                  {{ filteredGroups.length }} {{ filteredGroups.length === 1 ? 'Service' : 'Services' }}
+                  ({{ totalInstances }} instances)
+                </div>
+                <QTablePagination
+                  :scope="paginationScope"
+                  :position="'bottom'"
+                  :resultTotal="filteredGroups.length"
+                  :perPageOptions="perPageOptions"
+                  @update:changeRecordPerPage="changePagination"
                 />
               </div>
-            </q-td>
-          </template>
-
-          <template #body-cell-last_seen="props">
-            <q-td :props="props">
-              <span class="tw:text-sm text-grey-7">{{ formatRelativeTime(props.row.last_seen) }}</span>
-            </q-td>
-          </template>
-        </q-table>
+            </template>
+          </q-table>
+        </div>
       </div>
     </div>
+
+    <!-- Service detail side panel -->
+    <q-dialog
+      :model-value="!!selectedService"
+      position="right"
+      full-height
+      maximized
+      @update:model-value="(val: boolean) => { if (!val) selectedService = null }"
+    >
+      <q-card
+        class="service-side-panel"
+        data-test="service-side-panel"
+      >
+        <!-- Panel header -->
+        <q-card-section class="panel-header q-ma-none">
+          <div class="tw:flex-1 tw:min-w-0">
+            <div class="tw:text-base tw:font-semibold tw:truncate">
+              {{ selectedService?.service_name }}
+            </div>
+          </div>
+          <q-btn v-close-popup round flat dense icon="cancel" size="sm" />
+        </q-card-section>
+
+        <q-separator />
+
+        <!-- Scrollable content -->
+        <q-card-section class="panel-content q-ma-none">
+          <!-- Stream Sources donut chart -->
+          <div class="tw:mb-4">
+            <div class="tw:text-[11px] tw:tracking-wide tw:font-medium tw:mb-2 section-label">
+              Stream Sources
+            </div>
+            <div style="height: 40vh; min-height: 180px;">
+              <CustomChartRenderer :data="selectedServiceChartOptions" />
+            </div>
+            <!-- Legend -->
+            <div class="tw:flex tw:items-center tw:justify-center tw:gap-4 tw:mt-2 tw:shrink-0">
+              <template v-for="[label, count, color] in [
+                ['Logs', selectedService?.logs_streams.length ?? 0, '#3b82f6'],
+                ['Metrics', selectedService?.metrics_streams.length ?? 0, '#22c55e'],
+                ['Traces', selectedService?.traces_streams.length ?? 0, '#f59e0b'],
+              ]" :key="label as string">
+                <div class="tw:flex tw:items-center tw:gap-1.5 tw:text-xs">
+                  <span class="tw:w-2.5 tw:h-2.5 tw:rounded-full tw:inline-block" :style="{ background: color as string }" />
+                  <span>{{ label }}</span>
+                  <span class="tw:font-semibold">{{ count }}</span>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <q-separator class="tw:my-3" />
+
+          <!-- Instance Identity -->
+          <div class="panel-section">
+            <div class="tw:text-[11px] tw:tracking-wide tw:font-medium tw:mb-2 section-label">
+              Instance Identity
+            </div>
+            <div
+              v-if="selectedService && Object.keys(selectedService.disambiguation).length > 0"
+              class="tw:flex tw:flex-wrap tw:gap-1.5"
+            >
+              <span
+                v-for="[key, value] in Object.entries(selectedService.disambiguation).sort(([a], [b]) => a.localeCompare(b))"
+                :key="key"
+                class="dimension-badge"
+                :class="getDimensionColorClass(key)"
+              >
+                <span class="tw:font-medium">{{ key }}</span>=<span>{{ value }}</span>
+              </span>
+            </div>
+            <div v-else class="tw:text-sm tw:italic section-label">
+              No dimensions configured.
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
-
-  <!-- Stream detail modal -->
-  <q-dialog v-model="streamDetailDialog">
-    <q-card style="min-width: 360px; max-width: 520px" class="tw:rounded-xl">
-      <q-card-section class="tw:flex tw:items-center tw:justify-between tw:pb-2">
-        <div>
-          <div class="text-h6">{{ selectedService?.service_name }}</div>
-          <div v-if="selectedService && Object.keys(selectedService.disambiguation).length > 0"
-            class="tw:flex tw:flex-wrap tw:gap-1 tw:mt-1">
-            <q-chip
-              v-for="(val, key) in selectedService.disambiguation"
-              :key="key"
-              size="10px" dense color="grey-4" text-color="grey-9"
-              class="tw:font-mono">
-              {{ key }}: {{ val }}
-            </q-chip>
-          </div>
-        </div>
-        <q-btn flat round dense icon="close" v-close-popup />
-      </q-card-section>
-
-      <q-separator />
-
-      <q-card-section class="tw:flex tw:flex-col tw:gap-4 tw:pt-4">
-        <template v-for="[label, streams, color] in [
-          [t('settings.correlation.logStreams'), selectedService?.logs_streams ?? [], 'blue'],
-          [t('settings.correlation.traceStreams'), selectedService?.traces_streams ?? [], 'orange'],
-          [t('settings.correlation.metricStreams'), selectedService?.metrics_streams ?? [], 'green'],
-        ]" :key="label">
-          <div v-if="streams.length > 0">
-            <div class="tw:flex tw:items-center tw:gap-2 tw:mb-2">
-              <q-badge :color="color">{{ streams.length }}</q-badge>
-              <span class="tw:font-semibold tw:text-sm">{{ label }}</span>
-            </div>
-            <div class="tw:flex tw:flex-col tw:gap-0.5 tw:pl-2 tw:border-l-2"
-              :class="color === 'blue' ? 'tw:border-blue-400' : color === 'orange' ? 'tw:border-orange-400' : 'tw:border-green-400'">
-              <span v-for="s in streams" :key="s" class="tw:font-mono tw:text-sm">{{ s }}</span>
-            </div>
-          </div>
-        </template>
-      </q-card-section>
-    </q-card>
-  </q-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "vuex";
 import { useI18n } from "vue-i18n";
 import serviceStreamsService from "@/services/service_streams";
-import GroupHeader from "@/components/common/GroupHeader.vue";
+import QTablePagination from "@/components/shared/grid/Pagination.vue";
+import CustomChartRenderer from "@/components/dashboards/panels/CustomChartRenderer.vue";
+
+const emit = defineEmits<{
+  (e: "navigate-to-configuration"): void;
+}>();
 
 const { t } = useI18n();
 
@@ -234,19 +378,74 @@ interface ServiceRecord {
   last_seen: number; // microseconds epoch
 }
 
+interface ServiceGroup {
+  service_name: string;
+  instances: ServiceRecord[];
+  sharedDimensions: [string, string][]; // dimensions same across all instances
+  varyingKeys: string[]; // dimension keys that differ
+  totalLogs: number;
+  totalTraces: number;
+  totalMetrics: number;
+  lastSeen: number;
+}
+
 const store = useStore();
 
-const loading = ref(true);   // true only on initial mount (shows spinner, hides table)
-const refreshing = ref(false); // true on manual refresh (keeps table visible)
+const loading = ref(true);
+const refreshing = ref(false);
 const error = ref<string | null>(null);
 const services = ref<ServiceRecord[]>([]);
 const searchQuery = ref("");
-const streamDetailDialog = ref(false);
+const filterKey = ref<string | null>(null);
+const filterValue = ref<string | null>(null);
 const selectedService = ref<ServiceRecord | null>(null);
+const expandedGroups = ref<Set<string>>(new Set());
 
-function openStreamDetail(row: ServiceRecord) {
-  selectedService.value = row;
-  streamDetailDialog.value = true;
+// Reset pagination when filters change
+watch([filterKey, filterValue, searchQuery], () => {
+  pagination.value.page = 1;
+});
+
+// All unique dimension keys across all services
+const allKeys = computed((): string[] => {
+  const keys = new Set<string>();
+  for (const s of services.value) {
+    for (const k of Object.keys(s.disambiguation)) keys.add(k);
+  }
+  return [...keys].sort();
+});
+
+// Values for the currently selected key
+const allValues = computed((): string[] => {
+  if (!filterKey.value) return [];
+  const vals = new Set<string>();
+  for (const s of services.value) {
+    const v = s.disambiguation[filterKey.value];
+    if (v) vals.add(v);
+  }
+  return [...vals].sort();
+});
+
+// Filtered options for use-input type-to-search
+const filteredKeyOptions = ref<string[]>([]);
+const filteredValueOptions = ref<string[]>([]);
+
+function filterKeyFn(val: string, update: (fn: () => void) => void) {
+  update(() => {
+    const needle = val.toLowerCase();
+    filteredKeyOptions.value = needle
+      ? allKeys.value.filter(k => k.toLowerCase().includes(needle))
+      : allKeys.value;
+  });
+}
+
+function filterValueFn(val: string, update: (fn: () => void) => void) {
+  update(() => {
+    const needle = val.toLowerCase();
+    filteredValueOptions.value = needle
+      ? allValues.value.filter(v => v.toLowerCase().includes(needle))
+      : allValues.value;
+  });
 }
 
 function unique(arr: string[]): string[] {
@@ -257,6 +456,19 @@ const pagination = ref({
   page: 1,
   rowsPerPage: 20,
 });
+
+const perPageOptions: any = [
+  { label: "20", value: 20 },
+  { label: "50", value: 50 },
+  { label: "100", value: 100 },
+  { label: "250", value: 250 },
+  { label: "500", value: 500 },
+];
+
+const changePagination = (val: { label: string; value: number }) => {
+  pagination.value.rowsPerPage = val.value;
+  pagination.value.page = 1;
+};
 
 const columns = computed(() => [
   {
@@ -271,25 +483,260 @@ const columns = computed(() => [
     label: t("settings.correlation.telemetryCoverage"),
     field: "logs_streams",
     align: "left" as const,
+    style: "width: 220px",
   },
   {
     name: "last_seen",
     label: t("settings.correlation.lastSeen"),
     field: "last_seen",
-    align: "left" as const,
+    align: "right" as const,
     sortable: true,
+    style: "width: 120px",
   },
 ]);
 
-const filteredServices = computed((): ServiceRecord[] => {
-  if (!searchQuery.value) {
-    return services.value;
+// Group services by service_name
+const serviceGroups = computed((): ServiceGroup[] => {
+  const groupMap: Record<string, ServiceRecord[]> = {};
+  for (const s of services.value) {
+    if (!groupMap[s.service_name]) groupMap[s.service_name] = [];
+    groupMap[s.service_name].push(s);
   }
-  const query = searchQuery.value.toLowerCase();
-  return services.value.filter((s) =>
-    s.service_name.toLowerCase().includes(query)
-  );
+
+  return Object.entries(groupMap).map(([name, instances]) => {
+    // Find shared dimensions (same value across all instances)
+    const allKeys = new Set<string>();
+    for (const inst of instances) {
+      for (const k of Object.keys(inst.disambiguation)) allKeys.add(k);
+    }
+
+    const shared: [string, string][] = [];
+    const varying: string[] = [];
+    for (const key of allKeys) {
+      const values = new Set(instances.map(i => i.disambiguation[key]).filter(Boolean));
+      if (values.size === 1) {
+        shared.push([key, [...values][0]]);
+      } else {
+        varying.push(key);
+      }
+    }
+
+    // Aggregate telemetry: count unique streams across all instances
+    const allLogs = new Set<string>();
+    const allTraces = new Set<string>();
+    const allMetrics = new Set<string>();
+    let latestSeen = 0;
+    for (const inst of instances) {
+      inst.logs_streams.forEach(s => allLogs.add(s));
+      inst.traces_streams.forEach(s => allTraces.add(s));
+      inst.metrics_streams.forEach(s => allMetrics.add(s));
+      if (inst.last_seen > latestSeen) latestSeen = inst.last_seen;
+    }
+
+    return {
+      service_name: name,
+      instances,
+      sharedDimensions: shared.sort(([a], [b]) => a.localeCompare(b)),
+      varyingKeys: varying.sort(),
+      totalLogs: allLogs.size,
+      totalTraces: allTraces.size,
+      totalMetrics: allMetrics.size,
+      lastSeen: latestSeen,
+    };
+  }).sort((a, b) => a.service_name.localeCompare(b.service_name));
 });
+
+/** Filter instances within a group based on active key/value filter */
+function filterInstances(instances: ServiceRecord[]): ServiceRecord[] {
+  if (!filterKey.value || !filterValue.value) return instances;
+  return instances.filter(inst => {
+    const v = inst.disambiguation[filterKey.value!];
+    return v === filterValue.value;
+  });
+}
+
+const filteredGroups = computed((): ServiceGroup[] => {
+  let groups = serviceGroups.value;
+
+  // Filter by dimension key+value — only apply when both are selected
+  if (filterKey.value && filterValue.value) {
+    groups = groups
+      .map(g => ({ ...g, instances: filterInstances(g.instances) }))
+      .filter(g => g.instances.length > 0);
+  }
+
+  // Filter by search query
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    groups = groups.filter(g =>
+      g.service_name.toLowerCase().includes(query) ||
+      g.instances.some(inst =>
+        Object.entries(inst.disambiguation).some(([k, v]) =>
+          k.toLowerCase().includes(query) || v.toLowerCase().includes(query)
+        )
+      )
+    );
+  }
+
+  return groups;
+});
+
+const totalInstances = computed(() =>
+  filteredGroups.value.reduce((sum, g) => sum + g.instances.length, 0)
+);
+
+// Manual pagination for groups
+const paginatedGroups = computed(() => {
+  const start = (pagination.value.page - 1) * pagination.value.rowsPerPage;
+  return filteredGroups.value.slice(start, start + pagination.value.rowsPerPage);
+});
+
+// Provide a scope-like object for QTablePagination
+const paginationScope = computed(() => ({
+  pagination: {
+    page: pagination.value.page,
+    rowsPerPage: pagination.value.rowsPerPage,
+    rowsNumber: filteredGroups.value.length,
+  },
+  pagesNumber: Math.ceil(filteredGroups.value.length / pagination.value.rowsPerPage),
+  isFirstPage: pagination.value.page === 1,
+  isLastPage: pagination.value.page >= Math.ceil(filteredGroups.value.length / pagination.value.rowsPerPage),
+  firstPage: () => { pagination.value.page = 1; },
+  prevPage: () => { if (pagination.value.page > 1) pagination.value.page--; },
+  nextPage: () => {
+    const maxPage = Math.ceil(filteredGroups.value.length / pagination.value.rowsPerPage);
+    if (pagination.value.page < maxPage) pagination.value.page++;
+  },
+  lastPage: () => {
+    pagination.value.page = Math.ceil(filteredGroups.value.length / pagination.value.rowsPerPage);
+  },
+}));
+
+const STREAM_TYPE_COLORS: Record<string, string> = {
+  logs: '#3b82f6',
+  traces: '#f59e0b',
+  metrics: '#22c55e',
+};
+
+const selectedServiceChartOptions = computed(() => {
+  if (!selectedService.value) return {};
+  const svc = selectedService.value;
+  const isDark = store.state.theme === 'dark';
+
+  const streamDetails = [
+    { type: 'Logs', streams: svc.logs_streams, color: STREAM_TYPE_COLORS.logs },
+    { type: 'Traces', streams: svc.traces_streams, color: STREAM_TYPE_COLORS.traces },
+    { type: 'Metrics', streams: svc.metrics_streams, color: STREAM_TYPE_COLORS.metrics },
+  ].filter(d => d.streams.length > 0);
+
+  const pieData = streamDetails.map(d => ({
+    name: d.type,
+    value: d.streams.length,
+    streamNames: d.streams,
+  }));
+
+  const totalStreams = pieData.reduce((sum, d) => sum + d.value, 0);
+
+  return {
+    tooltip: {
+      trigger: 'item',
+      enterable: true,
+      appendToBody: true,
+      confine: false,
+      textStyle: { color: isDark ? '#fff' : '#000', fontSize: 12 },
+      backgroundColor: isDark ? 'rgba(0,0,0,1)' : 'rgba(255,255,255,1)',
+      extraCssText: 'max-height: 240px; overflow-y: auto;',
+      formatter: function (params: any) {
+        const names: string[] = params.data?.streamNames ?? [];
+        const header = `${params.marker} ${params.name} : <b>${params.value} streams (${params.percent}%)</b>`;
+        if (!names.length) return header;
+        const list = names.map((n: string) =>
+          `<div style="padding:1px 0;padding-left:14px;font-size:11px;">${n}</div>`
+        ).join('');
+        return header + '<div style="margin-top:4px;">' + list + '</div>';
+      },
+    },
+    color: streamDetails.map(d => d.color),
+    series: [{
+      type: 'pie',
+      radius: ['50%', '78%'],
+      center: ['50%', '50%'],
+      avoidLabelOverlap: true,
+      itemStyle: {
+        borderRadius: 4,
+        borderColor: isDark ? '#111827' : '#fff',
+        borderWidth: 2,
+      },
+      label: { show: false },
+      emphasis: {
+        label: { show: false },
+        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.2)' },
+      },
+      data: pieData,
+    }],
+    graphic: totalStreams > 0 ? [{
+      type: 'text',
+      left: 'center',
+      top: 'center',
+      style: {
+        text: `${totalStreams}`,
+        fontSize: 22,
+        fontWeight: 'bold',
+        fill: isDark ? '#e5e7eb' : '#1f2937',
+        textAlign: 'center',
+      },
+    }] : [],
+  };
+});
+
+const toggleGroup = (serviceName: string) => {
+  const newSet = new Set(expandedGroups.value);
+  if (newSet.has(serviceName)) {
+    newSet.delete(serviceName);
+  } else {
+    newSet.add(serviceName);
+  }
+  expandedGroups.value = newSet;
+};
+
+
+const getDimensionColorClass = (key: string): string => {
+  const colorMap: Record<string, string> = {
+    'k8s-deployment': 'badge-blue',
+    'k8s-namespace': 'badge-orange',
+    'k8s-cluster': 'badge-indigo',
+    'deployment': 'badge-blue',
+    'namespace': 'badge-orange',
+    'cluster': 'badge-indigo',
+    'env': 'badge-green',
+    'environment': 'badge-green',
+    'host': 'badge-purple',
+    'hostname': 'badge-purple',
+    'service': 'badge-cyan',
+    'service_name': 'badge-cyan',
+    'region': 'badge-pink',
+    'zone': 'badge-pink',
+    'pod': 'badge-teal',
+    'container': 'badge-red',
+    'app': 'badge-yellow',
+    'application': 'badge-yellow',
+  };
+
+  if (colorMap[key]) return colorMap[key];
+
+  const lowerKey = key.toLowerCase();
+  for (const [pattern, className] of Object.entries(colorMap)) {
+    if (lowerKey.includes(pattern)) return className;
+  }
+
+  const classes = ['badge-gray', 'badge-amber', 'badge-violet', 'badge-rose'];
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = ((hash << 5) - hash) + key.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return classes[Math.abs(hash) % classes.length];
+};
 
 const formatRelativeTime = (microseconds: number): string => {
   if (!microseconds) return "—";
@@ -299,11 +746,11 @@ const formatRelativeTime = (microseconds: number): string => {
 
   if (diffSeconds < 60) return `${diffSeconds}s ago`;
   const diffMinutes = Math.floor(diffSeconds / 60);
-  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes !== 1 ? "s" : ""} ago`;
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
   const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+  return `${diffDays}d ago`;
 };
 
 const loadServices = async (isRefresh = false) => {
@@ -322,7 +769,6 @@ const loadServices = async (isRefresh = false) => {
 
     const response = await serviceStreamsService.getServicesList(orgId);
     const raw: ServiceRecord[] = response.data || [];
-    // Deduplicate stream lists — backend compacts on next write but old rows may still have dupes
     services.value = raw.map((s) => ({
       ...s,
       logs_streams: unique(s.logs_streams),
@@ -345,11 +791,197 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .discovered-services {
-  // Match parent card-container background
   background: var(--o2-card-bg);
 }
 
-:deep(.q-table th) {
+.config-link-btn {
+  border: 1px solid #3b82f6;
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.08);
+  transition: background 0.15s;
+  &:hover {
+    background: rgba(59, 130, 246, 0.18);
+  }
+}
+
+.ds-dark .config-link-btn {
+  border-color: #60a5fa;
+  color: #93c5fd;
+  background: rgba(96, 165, 250, 0.12);
+  &:hover {
+    background: rgba(96, 165, 250, 0.22);
+  }
+}
+
+/* Group header row */
+.group-header-row {
+  cursor: pointer;
+  font-weight: 500;
+  &:hover {
+    background: rgba(0, 0, 0, 0.02) !important;
+  }
+}
+
+.ds-dark .group-header-row:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.instance-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.ds-dark .instance-count-badge {
+  background: #4b5563;
+  color: #d1d5db;
+}
+
+/* Instance sub-rows */
+.instance-row {
+  cursor: pointer;
+  &:hover {
+    background: rgba(59, 130, 246, 0.04) !important;
+  }
+}
+
+.ds-dark .instance-row:hover {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+.instance-label {
+  font-weight: 500;
+}
+
+/* Dimension badges — border-only, matching IncidentList pattern */
+.dimension-badge-sm {
+  padding: 1px 6px;
+  font-size: 10px;
+  max-width: 200px;
+}
+
+.dimension-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 600;
+  max-width: 180px;
+
+  span {
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.badge-more {
+  background: #e5e7eb;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Telemetry badges — border-only */
+.telemetry-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.telemetry-sm {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.telemetry-logs { border: 1px solid #1d4ed8; }
+.telemetry-traces { border: 1px solid #c2410c; }
+.telemetry-metrics { border: 1px solid #065f46; }
+.telemetry-inactive { border: 1px solid #9ca3af; color: #9ca3af; }
+
+/* Dimension color palette — border only */
+.badge-blue { border: 1px solid #1d4ed8; }
+.badge-green { border: 1px solid #065f46; }
+.badge-yellow { border: 1px solid #92400e; }
+.badge-pink { border: 1px solid #9f1239; }
+.badge-purple { border: 1px solid #7c3aed; }
+.badge-orange { border: 1px solid #c2410c; }
+.badge-cyan { border: 1px solid #0e7490; }
+.badge-indigo { border: 1px solid #4f46e5; }
+.badge-teal { border: 1px solid #0f766e; }
+.badge-red { border: 1px solid #dc2626; }
+.badge-gray { border: 1px solid #4b5563; }
+.badge-amber { border: 1px solid #d97706; }
+.badge-violet { border: 1px solid #7c3aed; }
+.badge-rose { border: 1px solid #e11d48; }
+
+/* Dark mode */
+.ds-dark .badge-more { background: #4b5563; color: #d1d5db; }
+.ds-dark .telemetry-logs { border-color: #93c5fd; }
+.ds-dark .telemetry-traces { border-color: #fdba74; }
+.ds-dark .telemetry-metrics { border-color: #6ee7b7; }
+.ds-dark .telemetry-inactive { border-color: #6b7280; color: #6b7280; }
+.ds-dark .badge-blue { border-color: #93c5fd; }
+.ds-dark .badge-green { border-color: #6ee7b7; }
+.ds-dark .badge-yellow { border-color: #fcd34d; }
+.ds-dark .badge-pink { border-color: #f9a8d4; }
+.ds-dark .badge-purple { border-color: #c4b5fd; }
+.ds-dark .badge-orange { border-color: #fdba74; }
+.ds-dark .badge-cyan { border-color: #67e8f9; }
+.ds-dark .badge-indigo { border-color: #a5b4fc; }
+.ds-dark .badge-teal { border-color: #5eead4; }
+.ds-dark .badge-red { border-color: #fca5a5; }
+.ds-dark .badge-gray { border-color: #d1d5db; }
+.ds-dark .badge-amber { border-color: #fbbf24; }
+.ds-dark .badge-violet { border-color: #c4b5fd; }
+.ds-dark .badge-rose { border-color: #fda4af; }
+
+/* Side panel */
+.service-side-panel {
+  width: 420px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px !important;
+  flex-shrink: 0;
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px !important;
+}
+
+.panel-section {
+  padding: 8px 0;
+}
+
+.section-label {
+  color: #6b7280;
+}
+
+.ds-dark .section-label {
+  color: #9ca3af;
+}
+.refresh-btn{
+  min-height: 36px;
+  height: 36px;
 }
 </style>

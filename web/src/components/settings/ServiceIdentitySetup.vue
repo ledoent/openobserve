@@ -15,7 +15,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 <template>
-  <div class="tw:w-full service-identity-setup q-mt-sm">
+  <div class="tw:w-full service-identity-setup q-mt-sm" :class="{ 'sis-dark': store.state.theme === 'dark' }">
     <!-- Loading skeleton while fetching recommendations -->
     <div v-if="loading" class="tw:flex tw:flex-col tw:gap-4 tw:py-4">
       <q-skeleton type="rect" height="56px" class="tw:rounded-lg" />
@@ -24,65 +24,259 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </div>
 
     <div v-else>
-      <!-- Section 1: Service name source (fixed, compact) -->
-      <div class="setup-section tw:mb-6 tw:text-sm tw:flex tw:items-center tw:gap-1">
-        <span>{{ t("settings.correlation.serviceNameDerivedPrefix") }} {{ t("settings.correlation.serviceNameFields") }}</span>
-        <q-btn
-          flat round dense size="xs" color="primary"
-          icon="open_in_new"
-          @click="$emit('navigate-to-aliases', 'service')"
-        />
+      <!-- Section 1: Service Configuration -->
+      <div class="tw:mb-3 tw:rounded-lg tw:overflow-hidden"
+        style="border: 1px solid var(--o2-border-color)"
+      >
+        <div class="tw:p-3 tw:flex tw:flex-col tw:gap-3">
+
+        <!-- Service name source banner -->
+        <div
+          class="tw:rounded-lg tw:border tw:overflow-hidden tw:transition-all"
+          :class="serviceNameDetected
+            ? (store.state.theme === 'dark' ? 'tw:bg-sky-900/10 tw:border-sky-300/30' : 'tw:bg-sky-50/80 tw:border-sky-200')
+            : (store.state.theme === 'dark' ? 'tw:bg-amber-900/10 tw:border-amber-800/30' : 'tw:bg-amber-50/80 tw:border-amber-200')"
+        >
+        <!-- Collapsed row -->
+        <div
+          class="tw:flex tw:items-center tw:gap-2.5 tw:px-3 tw:py-2 tw:cursor-pointer hover:tw:opacity-80 tw:transition-opacity"
+          @click="serviceNameExpanded = !serviceNameExpanded"
+        >
+          <q-icon
+            :name="serviceNameDetected ? 'check_circle' : 'warning'"
+            size="18px"
+            :color="serviceNameDetected ? 'positive' : undefined"
+            :class="serviceNameDetected ? '' : 'tw:text-amber-500'"
+          />
+          <div class="tw:flex-1 tw:min-w-0 tw:text-[13px] tw:leading-tight">
+            <template v-if="serviceNameDetected">
+              Service name detected from
+              <span class="tw:font-bold tw:text-primary">Service</span>
+              field alias
+              <span class="tw:text-xs tw:opacity-60">({{ detectedServiceFields.length + unseenServiceFields.length }})</span>
+            </template>
+            <template v-else>
+              <span class="tw:font-semibold">{{ t("settings.correlation.serviceNameNotDetected") }}</span>
+            </template>
+          </div>
+          <q-icon
+            :name="serviceNameExpanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down'"
+            size="18px"
+            class="tw:opacity-40 tw:shrink-0"
+          />
+        </div>
+
+        <!-- Expanded detail -->
+        <div v-if="serviceNameExpanded" class="tw:px-3 tw:pb-3 tw:pt-2 tw:border-t"
+          :class="serviceNameDetected
+            ? (store.state.theme === 'dark' ? 'tw:border-sky-300/30' : 'tw:border-sky-200')
+            : (store.state.theme === 'dark' ? 'tw:border-amber-800/30' : 'tw:border-amber-200')"
+        >
+          <!-- Inner card -->
+          <div class="tw:rounded-lg tw:p-2.5"
+            :class="store.state.theme === 'dark' ? 'tw:bg-grey-9/60' : 'tw:bg-grey-1'"
+          >
+            <div class="tw:text-xs tw:font-medium tw:mb-2"
+              :class="store.state.theme === 'dark' ? 'tw:text-grey-4' : 'tw:text-grey-7'"
+            >
+              {{ t("settings.correlation.serviceNameExpandedHelp") }}
+            </div>
+
+            <!-- Field pills -->
+            <div class="tw:flex tw:flex-wrap tw:gap-1.5 tw:mb-3">
+              <!-- Detected fields (with stream type dots) -->
+              <div
+                v-for="field in detectedServiceFields"
+                :key="field.name"
+                class="tw:inline-flex tw:items-center tw:gap-1.5 tw:px-2.5 tw:py-1 tw:rounded-md tw:font-mono tw:text-xs tw:font-medium"
+                style="border: 1px solid var(--o2-border-color)"
+                :class="store.state.theme === 'dark'
+                  ? 'tw:bg-grey-8 tw:text-grey-2'
+                  : 'tw:bg-white tw:text-grey-8 tw:shadow-sm'"
+              >
+                <div class="tw:flex tw:items-center tw:gap-0.5 tw:mr-0.5">
+                  <span
+                    v-for="st in field.streamTypes"
+                    :key="st"
+                    class="tw:w-1.5 tw:h-1.5 tw:rounded-full"
+                    :class="{
+                      'tw:bg-blue-500': st === 'logs',
+                      'tw:bg-orange-500': st === 'traces',
+                      'tw:bg-green-500': st === 'metrics',
+                    }"
+                    :title="st"
+                  />
+                </div>
+                {{ field.name }}
+              </div>
+
+              <!-- Configured but not yet seen (grey pills) -->
+              <div
+                v-for="field in unseenServiceFields"
+                :key="field"
+                class="tw:inline-flex tw:items-center tw:px-2.5 tw:py-1 tw:rounded-md tw:border-dashed tw:font-mono tw:text-xs"
+                style="border: 1px dashed var(--o2-border-color)"
+                :class="store.state.theme === 'dark'
+                  ? 'tw:text-grey-6'
+                  : 'tw:text-grey-5'"
+                :title="t('settings.correlation.serviceNameConfiguredNotSeen')"
+              >
+                {{ field }}
+              </div>
+            </div>
+
+            <!-- Legend row -->
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2">
+              <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-3 tw:text-[10px]"
+                :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-6'"
+              >
+                <div class="tw:flex tw:items-center tw:gap-1">
+                  <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-blue-500" />
+                  {{ t("settings.correlation.foundInLogs") }}
+                </div>
+                <div class="tw:flex tw:items-center tw:gap-1">
+                  <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-orange-500" />
+                  {{ t("settings.correlation.foundInTraces") }}
+                </div>
+                <div class="tw:flex tw:items-center tw:gap-1">
+                  <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-green-500" />
+                  {{ t("settings.correlation.foundInMetrics") }}
+                </div>
+                <div v-if="unseenServiceFields.length > 0" class="tw:flex tw:items-center tw:gap-1">
+                  <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:border tw:border-dashed tw:border-grey-4" />
+                  {{ t("settings.correlation.serviceNameConfiguredNotSeen") }}
+                </div>
+              </div>
+
+              <!-- Customize link -->
+              <a
+                class="config-link-btn tw:cursor-pointer tw:inline-flex tw:items-center tw:gap-1 tw:px-2 tw:py-0.5 tw:rounded tw:text-xs tw:font-semibold tw:no-underline"
+                @click.prevent="emit('navigate-to-aliases', 'service')"
+              >
+                {{ t('settings.correlation.customizeFieldMappings') }}
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Section 2: Disambiguation Fields -->
-      <div class="setup-section tw:mb-6">
-        <GroupHeader
-          :title="t('settings.correlation.distinguishByLabel')"
-          :showIcon="false"
-          class="tw:mb-1"
-        />
-        <div class="text-body2 tw:mb-3 tw:opacity-70">
+      <!-- Field Mapping Dialog -->
+      <q-dialog v-model="showFieldMappingDialog">
+        <q-card style="min-width: 480px; max-width: 600px" class="tw:rounded-xl">
+          <q-card-section class="tw:flex tw:items-center tw:justify-between tw:pb-2">
+            <div>
+              <div class="text-h6">{{ t("settings.correlation.customizeFieldMappings") }}</div>
+              <div class="tw:text-xs tw:mt-1"
+                :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-6'"
+              >
+                {{ t("settings.correlation.fieldMappingDialogHelp") }}
+              </div>
+            </div>
+            <q-btn flat round dense icon="close" v-close-popup />
+          </q-card-section>
+
+          <q-separator />
+
+          <q-card-section class="tw:pt-4">
+            <TagInput
+              :model-value="editableServiceFields"
+              @update:model-value="editableServiceFields = $event"
+              :placeholder="t('settings.correlation.fieldMappingPlaceholder')"
+              label=""
+            />
+          </q-card-section>
+
+          <q-separator />
+
+          <q-card-actions align="right" class="tw:px-4 tw:py-3">
+            <q-btn
+              flat no-caps
+              :label="t('common.cancel')"
+              v-close-popup
+            />
+            <q-btn
+              unelevated no-caps color="primary"
+              :label="t('common.save')"
+              :loading="savingFieldMappings"
+              @click="saveFieldMappings"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+
+      <!-- Disambiguation Fields -->
+      <div>
+        <div class="tw:flex tw:items-center tw:gap-2 tw:mb-1">
+          <span class="tw:font-bold tw:text-sm">{{ t('settings.correlation.distinguishByLabel') }}</span>
+          <span class="tw:flex-1"><q-separator /></span>
+        </div>
+        <div class="tw:text-xs tw:mb-3"
+          :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-6'"
+        >
           {{ t("settings.correlation.distinguishByHelp") }}
         </div>
 
         <!-- Empty state: nothing configured anywhere -->
         <div
           v-if="allConfiguredEnvs.length === 0 && !addingToEnv"
-          class="tw:flex tw:items-center tw:gap-3 tw:py-1"
+          class="tw:flex tw:flex-col tw:items-center tw:gap-2 tw:py-3 tw:px-4 tw:rounded-md tw:border tw:border-dashed"
+          :class="store.state.theme === 'dark' ? 'tw:border-grey-7 tw:bg-grey-9/40' : 'tw:border-grey-4 tw:bg-grey-1'"
         >
-          <span class="tw:text-sm tw:text-grey-6">
-            No identity fields configured yet.
+          <q-icon name="tune" size="28px" class="tw:text-grey-5 tw:mb-1" />
+          <span class="tw:text-sm tw:font-medium" :class="store.state.theme === 'dark' ? 'tw:text-grey-4' : 'tw:text-grey-7'">
+            No fields configured yet
           </span>
           <q-btn
-            flat no-caps dense size="sm" color="primary" icon="add" label="Add field"
+            no-caps dense size="sm" icon="add"
+            :label="t('settings.correlation.addField')"
+            class="o2-secondary-button tw:h-[28px] tw:mt-1"
+            :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
             data-test="service-identity-add-distinguish-btn"
             @click="addingToEnv = activeEnvironment"
           />
         </div>
 
         <!-- All configured env groups -->
-        <div v-else class="tw:flex tw:flex-col">
+        <div v-else class="tw:flex tw:flex-col tw:gap-2">
+          <!-- Auto-suggested banner (only when fields came from suggestion, not saved config) -->
+          <div v-if="isAutoSuggested" class="tw:flex tw:items-start tw:gap-2 tw:px-3 tw:py-2 tw:rounded-md tw:text-xs"
+            :class="store.state.theme === 'dark' ? 'tw:bg-blue-900/15 tw:text-blue-300' : 'tw:bg-blue-50 tw:text-blue-700'"
+          >
+            <q-icon name="auto_awesome" size="14px" class="tw:shrink-0 tw:mt-0.5" />
+            <span>{{ t("settings.correlation.autoSuggestedBanner") }}</span>
+          </div>
+
           <!-- One row per configured env -->
           <template v-for="(envKey, envIdx) in allConfiguredEnvs" :key="envKey">
-            <!-- Divider between groups -->
-            <div
-              v-if="envIdx > 0"
-              class="tw:border-t tw:my-2"
-              :class="store.state.theme === 'dark' ? 'tw:border-grey-8' : 'tw:border-grey-3'"
-            />
-            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:py-1">
+            <!-- Environment label -->
+            <div v-if="allConfiguredEnvs.length > 1" class="tw:flex tw:items-center tw:gap-2 tw:mt-1"
+              :class="{ 'tw:pt-2 tw:border-t': envIdx > 0 }"
+            >
+              <span class="tw:text-[10px] tw:font-bold"
+                :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-6'"
+              >
+                {{ SET_LABELS[envKey] || envKey }}
+              </span>
+            </div>
+
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
               <!-- Pills for this env's fields -->
               <div
                 v-for="fieldId in (setDistinguishBy[envKey] ?? []).filter(Boolean)"
                 :key="fieldId"
-                class="tw:flex tw:items-center tw:gap-1.5 tw:pl-3 tw:pr-1.5 tw:py-1.5 tw:rounded-lg tw:border tw:text-xs tw:font-semibold tw:transition-colors"
+                class="tw:flex tw:items-center tw:gap-1 tw:pl-3 tw:pr-1 tw:py-1 tw:rounded-md tw:text-xs tw:font-medium tw:transition-colors"
+                style="border: 1px solid var(--o2-border-color)"
                 :class="store.state.theme === 'dark'
-                  ? 'tw:bg-primary/15 tw:border-primary/30 tw:text-primary'
-                  : 'tw:bg-primary/10 tw:border-primary/20 tw:text-primary'"
+                  ? 'tw:bg-grey-9 tw:text-grey-2 tw:shadow-sm'
+                  : 'tw:bg-white tw:text-grey-8 tw:shadow-sm'"
               >
-                {{ getGroupByValue(fieldId)?.display ?? fieldId }}
+                <span>{{ getGroupByValue(fieldId)?.display ?? fieldId }}</span>
+                <q-tooltip v-if="getFieldCardinalityTooltip(fieldId)" anchor="top middle" self="bottom middle" class="tw:text-xs">
+                  {{ getFieldCardinalityTooltip(fieldId) }}
+                </q-tooltip>
                 <q-btn
-                  flat round dense size="xs" icon="close" color="primary"
+                  flat round dense size="xs" icon="cancel"
+                  :color="store.state.theme === 'dark' ? 'grey-5' : 'grey-6'"
                   @click="removeFieldByIdFromEnv(envKey, fieldId)"
                 />
               </div>
@@ -96,10 +290,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   option-label="label"
                   option-value="value"
                   emit-value map-options
-                  dense outlined
-                  placeholder="Select field…"
-                  style="min-width: 200px"
+                  use-input input-debounce="0"
+                  dense borderless
+                  :placeholder="t('settings.correlation.selectField')"
+                  style="min-width: 220px"
                   data-test="service-identity-add-distinguish-btn"
+                  @filter="onAddFieldFilter"
                   @update:model-value="onAddFieldToEnv(envKey, $event)"
                 >
                   <template #option="scope">
@@ -107,9 +303,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       <q-item-section>
                         <q-item-label class="tw:flex tw:items-center tw:gap-2">
                           {{ scope.opt.label }}
-                          <q-badge v-if="scope.opt.recommended" color="positive" outline label="recommended" class="tw:text-xs" />
+                          <q-badge v-if="scope.opt.cardinalityLabel"
+                            :color="scope.opt.cardinalityColor"
+                            outline
+                            :label="scope.opt.cardinalityLabel"
+                            class="tw:text-[10px]"
+                          />
+                          <q-badge v-if="scope.opt.recommended" color="positive" outline label="recommended" class="tw:text-[10px]" />
                         </q-item-label>
-                        <q-item-label caption>{{ scope.opt.streamTypes?.join(', ') }}</q-item-label>
+                        <q-item-label caption class="tw:flex tw:items-center tw:gap-2">
+                          <span v-if="scope.opt.uniqueValues">{{ scope.opt.uniqueValues }} unique values</span>
+                          <span v-if="scope.opt.streamTypes">{{ scope.opt.streamTypes.join(', ') }}</span>
+                        </q-item-label>
                       </q-item-section>
                     </q-item>
                   </template>
@@ -117,26 +322,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <q-btn flat round dense icon="close" size="sm" color="grey-6" @click="addingToEnv = ''; addFieldValue = ''" />
               </template>
 
-              <!-- + Add chip (when not adding to this group and under limit) -->
-              <div
+              <!-- + Add field button -->
+              <q-btn
                 v-else-if="(setDistinguishBy[envKey] ?? []).filter(Boolean).length < 5"
-                class="tw:flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:rounded-lg tw:border tw:border-dashed tw:border-grey-4 tw:text-xs tw:text-grey-5 tw:cursor-pointer hover:tw:border-primary hover:tw:text-primary tw:transition-colors"
+                flat no-caps dense size="sm"
+                :label="t('settings.correlation.addField')"
+                class="o2-secondary-button tw:h-[28px]"
+                :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
                 @click="addingToEnv = envKey"
               >
-                <q-icon name="add" size="12px" />
-                Add
-              </div>
+                <q-tooltip anchor="top middle" self="bottom middle" class="tw:text-xs tw:max-w-[240px]">
+                  {{ t("settings.correlation.addFieldTooltip") }}
+                </q-tooltip>
+              </q-btn>
+
             </div>
           </template>
 
           <!-- Adding to a new env (not yet in the list) -->
           <template v-if="addingToEnv && !allConfiguredEnvs.includes(addingToEnv)">
-            <div
-              v-if="allConfiguredEnvs.length > 0"
-              class="tw:border-t tw:my-2"
-              :class="store.state.theme === 'dark' ? 'tw:border-grey-8' : 'tw:border-grey-3'"
-            />
-            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:py-1">
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:pt-2"
+              style="border-top: 1px solid var(--o2-border-color)"
+            >
               <q-select
                 ref="addFieldSelectRef"
                 v-model="addFieldValue"
@@ -144,10 +351,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 option-label="label"
                 option-value="value"
                 emit-value map-options
-                dense outlined
-                placeholder="Select field…"
-                style="min-width: 200px"
+                use-input input-debounce="0"
+                dense borderless
+                :placeholder="t('settings.correlation.selectField')"
+                style="min-width: 220px"
                 data-test="service-identity-add-distinguish-btn"
+                @filter="onAddFieldFilter"
                 @update:model-value="onAddFieldToEnv(addingToEnv, $event)"
               >
                 <template #option="scope">
@@ -155,9 +364,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <q-item-section>
                       <q-item-label class="tw:flex tw:items-center tw:gap-2">
                         {{ scope.opt.label }}
-                        <q-badge v-if="scope.opt.recommended" color="positive" outline label="recommended" class="tw:text-xs" />
+                        <q-badge v-if="scope.opt.cardinalityLabel"
+                          :color="scope.opt.cardinalityColor"
+                          outline
+                          :label="scope.opt.cardinalityLabel"
+                          class="tw:text-[10px]"
+                        />
+                        <q-badge v-if="scope.opt.recommended" color="positive" outline label="recommended" class="tw:text-[10px]" />
                       </q-item-label>
-                      <q-item-label caption>{{ scope.opt.streamTypes?.join(', ') }}</q-item-label>
+                      <q-item-label caption class="tw:flex tw:items-center tw:gap-2">
+                        <span v-if="scope.opt.uniqueValues">{{ scope.opt.uniqueValues }} unique values</span>
+                        <span v-if="scope.opt.streamTypes">{{ scope.opt.streamTypes.join(', ') }}</span>
+                      </q-item-label>
                     </q-item-section>
                   </q-item>
                 </template>
@@ -166,224 +384,346 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </div>
           </template>
 
-          <!-- Add new group chip -->
-          <template v-if="!addingToEnv">
-            <div
-              class="tw:border-t tw:my-2"
-              :class="store.state.theme === 'dark' ? 'tw:border-grey-8' : 'tw:border-grey-3'"
+          <!-- Add group + Save — bottom row -->
+          <div v-if="!addingToEnv" class="tw:flex tw:items-center tw:justify-between tw:mt-2">
+            <q-btn
+              flat no-caps dense size="sm"
+              :label="t('settings.correlation.addGroup')"
+              class="o2-secondary-button tw:h-[28px]"
+              :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
+              @click="addingToEnv = generateGroupId()"
+            >
+              <q-tooltip anchor="top middle" self="bottom middle" class="tw:text-xs tw:max-w-[240px]">
+                {{ t("settings.correlation.addGroupTooltip") }}
+              </q-tooltip>
+            </q-btn>
+            <q-btn
+              no-caps dense
+              :label="t('settings.correlation.saveIdentityConfig')"
+              :loading="saving"
+              :disable="saving"
+              class="o2-primary-button tw:h-[32px]"
+              data-test="service-identity-save-btn"
+              @click="saveConfig"
             />
-            <div class="tw:flex tw:items-center tw:gap-2 tw:py-1">
-              <div
-                class="tw:flex tw:items-center tw:gap-1 tw:px-3 tw:py-1.5 tw:rounded-lg tw:border tw:border-dashed tw:border-grey-4 tw:text-xs tw:text-grey-5 tw:cursor-pointer hover:tw:border-primary hover:tw:text-primary tw:transition-colors"
-                @click="addingToEnv = generateGroupId()"
-              >
-                <q-icon name="add" size="12px" />
-                Group
+          </div>
+        </div>
+      </div>
+
+        </div><!-- /padding -->
+      </div><!-- /Service Configuration card -->
+
+      <!-- Section 2: Workload Detection -->
+      <div v-if="availableGroups.length > 0" class="tw:mb-3 tw:rounded-lg tw:overflow-hidden"
+        style="border: 1px solid var(--o2-border-color)"
+      >
+        <!-- Section header -->
+        <div class="tw:px-4 tw:py-3 tw:flex tw:items-center tw:gap-2"
+          style="border-bottom: 1px solid var(--o2-border-color)"
+        >
+          <q-icon name="radar" size="18px" class="tw:text-teal-6" />
+          <span class="tw:font-bold tw:text-sm">Workload Detection</span>
+        </div>
+
+        <div class="tw:px-4 tw:pt-3 tw:pb-1">
+        <div class="tw:text-xs"
+          :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-6'"
+        >
+          We discovered these deployment patterns in your streams. Use them to configure service correlation.
+          <a
+            class="config-link-btn tw:cursor-pointer tw:inline-block tw:mx-1 tw:px-2 tw:py-0.5 tw:rounded tw:text-xs tw:font-semibold tw:no-underline tw:align-middle"
+            @click.prevent="emit('navigate-to-services')"
+          >Go to Services</a>
+          <span>to see the actual discovered services.</span>
+        </div>
+        </div>
+
+        <!-- Environment Tabs (Chrome-style) -->
+        <div class="tw:flex tw:items-end tw:gap-0 tw:px-4"
+          style="border-bottom: 1px solid var(--o2-border-color)"
+        >
+          <div
+            v-for="env in detectedEnvironments"
+            :key="env.key"
+            class="tw:relative tw:px-4 tw:py-2 tw:cursor-pointer tw:transition-all tw:text-xs tw:font-medium tw:min-w-[70px] tw:text-center tw:rounded-t-lg tw:border tw:border-b-0"
+            :class="activeEnvironment === env.key
+              ? (store.state.theme === 'dark'
+                ? 'tw:text-grey-1'
+                : 'tw:text-grey-9')
+              : (store.state.theme === 'dark'
+                ? 'tw:bg-transparent tw:text-grey-5 tw:border-transparent hover:tw:text-grey-3'
+                : 'tw:bg-transparent tw:text-grey-5 tw:border-transparent hover:tw:text-grey-7')
+            "
+            :style="activeEnvironment === env.key
+              ? 'margin-bottom: -1px; padding-bottom: 9px; background-color: var(--o2-card-bg-solid); border-color: var(--o2-border-color);'
+              : ''"
+            @click="activeEnvironment = env.key"
+          >
+            {{ env.label }}
+            <span
+              v-if="(setDistinguishBy[env.key] ?? []).filter(Boolean).length > 0"
+              class="tw:absolute tw:top-1 tw:right-1 tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-positive"
+              :title="`${(setDistinguishBy[env.key] ?? []).filter(Boolean).length} field(s) configured`"
+            />
+          </div>
+        </div>
+
+        <!-- Tab content panel — connects to active tab -->
+        <div v-if="primaryDim" class="tw:overflow-hidden tw:px-4 tw:pt-4 tw:pb-2">
+          <!-- Stat cards -->
+          <div class="tw:flex tw:items-stretch tw:gap-3">
+          <template v-for="(card, idx) in dimCards" :key="card.dim.group_id">
+            <!-- Plus connector between cards -->
+            <div v-if="idx > 0" class="tw:flex tw:items-center tw:shrink-0">
+              <q-icon name="add" size="16px" class="tw:text-grey-5" />
+            </div>
+
+            <!-- Dim card -->
+            <div class="dim-stat-card tw:flex-1 tw:min-w-0 tw:rounded-lg tw:p-3"
+              :style="store.state.theme === 'dark' ? card.theme.borderDark : card.theme.borderLight"
+            >
+              <div class="tw:flex tw:items-center tw:gap-2 tw:mb-2">
+                <q-icon :name="card.theme.icon" size="14px" :class="card.theme.iconClass" />
+                <span class="tw:text-[11px] tw:font-medium"
+                  :class="store.state.theme === 'dark' ? 'tw:text-grey-4' : 'tw:text-grey-6'"
+                >{{ card.label }}</span>
+                <span class="tw:text-lg tw:font-bold tw:ml-auto" :class="card.theme.countClass">{{ card.count }}</span>
+              </div>
+              <div class="dim-stat-pills tw:flex tw:flex-wrap tw:gap-1">
+                <span
+                  v-for="val in card.values.slice(0, 5)"
+                  :key="val"
+                  class="dim-stat-pill tw:text-[11px] tw:py-0.5 tw:px-2 tw:rounded-full tw:border tw:cursor-pointer hover:tw:opacity-70 tw:transition-opacity tw:inline-flex tw:items-center tw:gap-1"
+                  :class="store.state.theme === 'dark' ? card.theme.pillDark : card.theme.pillLight"
+                  :title="val"
+                  @click.stop="openInsightDialogByIdx(val, idx)"
+                ><span class="tw:truncate">{{ val }}</span><span v-if="card.dim" class="tw:inline-flex tw:gap-0.5 tw:ml-0.5 tw:shrink-0"><span
+                    v-for="st in getValueStreamTypes(card.dim.group_id, val)" :key="st"
+                    class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:inline-block"
+                    :class="{ 'tw:bg-blue-500': st === 'logs', 'tw:bg-orange-500': st === 'traces', 'tw:bg-green-500': st === 'metrics' }"
+                  /></span></span>
+                <span
+                  v-if="card.values.length > 5"
+                  class="dim-stat-pill tw:text-[11px] tw:py-0.5 tw:px-2 tw:rounded-full tw:cursor-pointer hover:tw:opacity-70 tw:transition-opacity"
+                  :class="store.state.theme === 'dark' ? 'tw:text-grey-4' : 'tw:text-grey-6'"
+                >+{{ card.values.length - 5 }}
+                  <q-menu anchor="bottom left" self="top left">
+                    <div class="tw:p-2 tw:flex tw:flex-wrap tw:gap-1 tw:max-w-[280px] tw:max-h-[200px] tw:overflow-y-auto"
+                      :class="store.state.theme === 'dark' ? 'tw:bg-grey-10' : ''"
+                    >
+                      <span
+                        v-for="val in card.values.slice(5)"
+                        :key="val"
+                        class="tw:text-[11px] tw:py-0.5 tw:px-2 tw:rounded-full tw:border tw:cursor-pointer hover:tw:opacity-70 tw:transition-opacity tw:inline-flex tw:items-center tw:gap-1"
+                        :class="store.state.theme === 'dark' ? card.theme.pillDark : card.theme.pillLight"
+                        :title="val"
+                        v-close-popup
+                        @click.stop="openInsightDialogByIdx(val, idx)"
+                      ><span class="tw:truncate">{{ val }}</span><span v-if="card.dim" class="tw:inline-flex tw:gap-0.5 tw:ml-0.5 tw:shrink-0"><span
+                          v-for="st in getValueStreamTypes(card.dim.group_id, val)" :key="st"
+                          class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:inline-block"
+                          :class="{ 'tw:bg-blue-500': st === 'logs', 'tw:bg-orange-500': st === 'traces', 'tw:bg-green-500': st === 'metrics' }"
+                        /></span></span>
+                    </div>
+                  </q-menu>
+                </span>
               </div>
             </div>
           </template>
-        </div>
-      </div>
+          </div>
 
-      <!-- Save button: lives with the fields it saves, not below detection -->
-      <div class="tw:flex tw:justify-start tw:mb-6">
-        <q-btn
-          :label="t('settings.correlation.saveIdentityConfig')"
-          :loading="saving"
-          :disable="saving"
-          no-caps
-          class="o2-primary-button tw:h-[36px]"
-          :class="
-            store.state.theme === 'dark'
-              ? 'o2-primary-button-dark'
-              : 'o2-primary-button-light'
-          "
-          data-test="service-identity-save-btn"
-          @click="saveConfig"
-        />
-      </div>
-
-      <!-- Section 2.5: Workload Detection -->
-      <div v-if="availableGroups.length > 0" class="setup-section tw:mb-6">
-        <div class="tw:flex tw:items-start tw:justify-between tw:mb-1">
-          <GroupHeader
-            :title="t('settings.correlation.availableFieldsPreviewLabel', 'Workload Detection')"
-            :showIcon="false"
-          />
-        </div>
-        <div class="text-body2 tw:mb-4 tw:opacity-70">
-          {{ t('settings.correlation.availableFieldsPreviewHelp', 'We discovered these deployment patterns in your streams. Use them to configure service correlation.') }}
-        </div>
-
-        <!-- Environment Tabs + global coverage -->
-        <div class="tw:flex tw:items-center tw:gap-4 tw:mb-6">
-          <div class="tw:flex tw:gap-2">
-            <div
-              v-for="env in detectedEnvironments"
-              :key="env.key"
-              class="tw:relative tw:px-4 tw:py-2 tw:rounded-md tw:border tw:cursor-pointer tw:transition-all tw:text-sm tw:font-medium tw:min-w-[80px] tw:text-center"
-              :class="activeEnvironment === env.key
-                ? 'tw:bg-white dark:tw:bg-grey-8 tw:text-grey-10 dark:tw:text-grey-1 tw:border-grey-9 dark:tw:border-white tw:shadow-sm'
-                : 'tw:bg-grey-1 dark:tw:bg-grey-9 tw:text-grey-6 dark:tw:text-grey-5 tw:border-grey-3 dark:tw:border-grey-8'
-              "
-              @click="activeEnvironment = env.key"
+          <!-- Stream type legend -->
+          <div class="tw:flex tw:items-center tw:gap-3 tw:mt-2 tw:ml-1">
+            <div class="tw:flex tw:items-center tw:gap-1 tw:text-[10px]"
+              :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-5'"
             >
-              {{ env.label }}
-              <!-- Dot badge: shows green when this env has configured distinguish_by fields -->
-              <span
-                v-if="(setDistinguishBy[env.key] ?? []).filter(Boolean).length > 0"
-                class="tw:absolute tw:top-1 tw:right-1 tw:w-2 tw:h-2 tw:rounded-full tw:bg-positive"
-                :title="`${(setDistinguishBy[env.key] ?? []).filter(Boolean).length} field(s) configured`"
-              />
+              <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:inline-block tw:bg-blue-500" />
+              <span>Found in Logs</span>
+            </div>
+            <div class="tw:flex tw:items-center tw:gap-1 tw:text-[10px]"
+              :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-5'"
+            >
+              <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:inline-block tw:bg-orange-500" />
+              <span>Found in Traces</span>
+            </div>
+            <div class="tw:flex tw:items-center tw:gap-1 tw:text-[10px]"
+              :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-5'"
+            >
+              <span class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:inline-block tw:bg-green-500" />
+              <span>Found in Metrics</span>
             </div>
           </div>
 
         </div>
 
-        <!-- Hierarchy label + coverage -->
-        <div v-if="hierarchyLabel" class="tw:flex tw:items-baseline tw:gap-3 tw:mb-4">
-          <span class="tw:text-[11px] tw:font-bold tw:uppercase tw:tracking-[0.1em] tw:text-grey-6">
-            {{ hierarchyLabel }}
-          </span>
-          <span v-if="activeEnvCoverage !== null" class="tw:text-xs tw:text-grey-6">
-            (covers {{ activeEnvCoverage }}% of your total telemetry)
-          </span>
-        </div>        <!-- Per-value cards for the primary (lowest cardinality) dimension -->
-        <div class="tw:flex tw:flex-col tw:gap-4">
-          <div
-            v-for="(cardData, valueKey) in primaryDimCards"
-            :key="valueKey"
-            class="tw:border tw:rounded-lg tw:overflow-hidden tw:shadow-sm tw:bg-white dark:tw:bg-grey-10"
-            :class="store.state.theme === 'dark' ? 'tw:border-grey-9' : 'tw:border-grey-2'"
+        <!-- Recommended Configuration -->
+        <div
+          v-if="suggestedConfig && activeEnvGroups.length > 0 && !suggestionDismissed && !suggestionAlreadyApplied"
+          class="tw:flex tw:items-center tw:gap-3 tw:px-4 tw:py-2.5"
+          :class="store.state.theme === 'dark' ? 'tw:bg-grey-9/30' : 'tw:bg-grey-1/30'"
+        >
+          <div class="tw:flex-1 tw:min-w-0 tw:text-xs tw:truncate"
+            :class="store.state.theme === 'dark' ? 'tw:text-grey-4' : 'tw:text-grey-7'"
           >
-            <!-- Card Header: vertical accent + field type label + value + cardinality + coverage -->
-            <div class="tw:flex tw:items-center tw:gap-4 tw:px-5 tw:py-4">
-              <div class="tw:w-[3px] tw:h-10 tw:bg-primary tw:rounded-full tw:shrink-0" />
-              <div class="tw:flex tw:flex-col tw:flex-1 tw:min-w-0">
-                <span class="tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-wider tw:text-primary tw:opacity-70">
-                  {{ primaryDim?.display }}
-                </span>
-                <span class="tw:font-bold tw:text-xl tw:text-grey-9 dark:tw:text-grey-2">{{ valueKey }}</span>
-              </div>
-              <div class="tw:flex tw:items-center tw:gap-3 tw:shrink-0">
-                <q-badge
-                  v-if="getEffectiveCardinalityClass(primaryDim) !== 'Unknown'"
-                  :color="cardinalityColor(getEffectiveCardinalityClass(primaryDim))"
-                  unelevated
-                  class="tw:px-3 tw:py-1 tw:rounded-md tw:text-[10px] tw:font-bold"
-                >
-                  {{ getEffectiveCardinalityClass(primaryDim) }}
-                </q-badge>
-                <!-- Per-value coverage: fraction of env services in THIS specific value -->
-                <span
-                  v-if="getValueCoverage(primaryDim, valueKey) !== null"
-                  class="tw:text-xs tw:font-medium tw:opacity-50"
-                >
-                  • {{ getValueCoverage(primaryDim, valueKey) }}% of {{ activeEnvironment.toUpperCase() }}
-                </span>
-              </div>
-            </div>
+            <span class="tw:font-bold"
+              :class="store.state.theme === 'dark' ? 'tw:text-grey-2' : 'tw:text-grey-8'"
+            >Recommended:</span>
+            {{ ' ' }}Use
+            <span class="tw:font-semibold">{{ suggestedConfig.distinguish_by.map(id => getGroupByValue(id)?.display ?? id).join(' + ') }}</span>
+            — covers {{ activeEnvCoverage ?? '–' }}% of your telemetry.
+          </div>
+          <div class="tw:shrink-0 tw:flex tw:items-center tw:gap-1">
+            <q-btn
+              no-caps dense flat size="sm" class="o2-secondary-button"
+              label="Apply"
+              @click="applySuggestion"
+            />
+            <q-btn flat round dense icon="cancel" size="xs"
+              class="tw:opacity-40 hover:tw:opacity-100"
+              @click="dismissSuggestion"
+            />
+          </div>
+        </div>
 
-            <!-- Card Body: hierarchical dimensions (f2/f3) -->
-            <div class="tw:px-5 tw:pb-4 tw:pt-0 tw:flex tw:flex-col tw:gap-4">
-              <!-- Nested secondary and tertiary dimensions as cloud of pills -->
-              <template v-if="secondaryDim && cardData.childValues.length > 0">
-                <div class="tw:flex tw:flex-col tw:gap-2 tw:pl-[17px]">
-                  <span class="tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-widest tw:text-grey-5">
-                    {{ pluralize(secondaryDim.display) }}
+        <!-- Workload Insight Sidebar -->
+        <q-dialog
+          v-model="insightDialogOpen"
+          position="right"
+          full-height
+          maximized
+        >
+          <q-card
+            style="width: 480px; max-width: 90vw;"
+            class="tw:flex tw:flex-col tw:h-full"
+            :class="store.state.theme === 'dark' ? 'tw:!bg-grey-10' : 'tw:!bg-white'"
+          >
+            <!-- Header -->
+            <q-card-section class="tw:flex tw:items-center tw:justify-between tw:px-4 tw:py-3 tw:border-b tw:shrink-0 q-ma-none"
+              :class="store.state.theme === 'dark' ? 'tw:border-grey-8' : 'tw:border-grey-3'"
+            >
+              <div>
+                <div class="tw:flex tw:items-center tw:gap-2">
+                  <span class="tw:text-base tw:font-bold">{{ insightData.title }}</span>
+                  <span class="tw:text-xs tw:py-0.5 tw:px-2 tw:rounded-full"
+                    :class="store.state.theme === 'dark' ? 'tw:bg-grey-8 tw:text-grey-4' : 'tw:bg-grey-2 tw:text-grey-6'"
+                  >{{ insightData.subtitle }}</span>
+                </div>
+                <div v-if="!(insightData as any).isCardLevel && insightData.coverage !== null"
+                  class="tw:flex tw:items-center tw:gap-1.5 tw:text-xs tw:mt-1"
+                  :class="store.state.theme === 'dark' ? 'tw:text-grey-4' : 'tw:text-grey-6'"
+                >
+                  <q-icon name="verified" size="14px" class="tw:text-positive" />
+                  <span><strong>{{ insightData.coverage }}%</strong> of services
+                    <span v-if="insightData.count !== null && insightData.total !== null">({{ insightData.count }}/{{ insightData.total }})</span>
                   </span>
-                  <div class="tw:flex tw:flex-wrap tw:gap-2">
-                    <div
-                      v-for="sVal in cardData.childValues.slice(0, 10)"
-                      :key="sVal"
-                      class="tw:flex tw:flex-col tw:gap-1.5 tw:px-3 tw:py-2 tw:rounded-lg tw:bg-grey-1 dark:tw:bg-grey-9 tw:border tw:border-grey-2 dark:tw:border-grey-8 tw:cursor-pointer tw:transition-colors hover:tw:border-primary/40 hover:tw:bg-primary/5"
-                      :title="`View details for ${secondaryDim?.display}: ${sVal}`"
-                      @click.stop="secondaryDim && openFieldDetails(secondaryDim, '', sVal)"
+                </div>
+              </div>
+              <q-btn v-close-popup round flat dense icon="cancel" size="sm" />
+            </q-card-section>
+
+            <!-- Content area — flex column so dimension columns fill remaining height -->
+            <q-card-section class="tw:flex-1 tw:flex tw:flex-col tw:overflow-hidden tw:px-4 tw:py-3 q-ma-none">
+              <!-- Stream contribution chart (single-value only) -->
+              <template v-if="!(insightData as any).isCardLevel && (insightData as any).streamDetails?.length > 0">
+                <div class="tw:mb-3 tw:shrink-0">
+                  <div class="tw:text-[11px] tw:tracking-wide tw:font-medium tw:mb-2"
+                    :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-5'"
+                  >Stream Sources</div>
+                  <div style="height: 40vh; min-height: 180px;">
+                    <CustomChartRenderer :data="insightChartData.options" />
+                  </div>
+                  <!-- Legend -->
+                  <div class="tw:flex tw:items-center tw:justify-center tw:gap-4 tw:mt-2">
+                    <div v-for="sd in (insightData as any).streamDetails" :key="sd.streamType"
+                      class="tw:flex tw:items-center tw:gap-1.5 tw:text-[11px]"
+                      :class="store.state.theme === 'dark' ? 'tw:text-grey-4' : 'tw:text-grey-6'"
                     >
-                      <div class="tw:flex tw:items-center tw:gap-1.5 tw:text-xs tw:font-semibold">
-                        <div class="tw:w-1.5 tw:h-1.5 tw:rounded-full tw:bg-primary" />
-                        {{ sVal }}
-                      </div>
-                      
-                      <!-- Tertiary samples (f3) -->
-                      <div v-if="tertiaryDim && cardData.tertiaryValues[sVal]?.length" class="tw:flex tw:flex-wrap tw:gap-1 tw:pl-3">
-                        <span 
-                          v-for="tVal in cardData.tertiaryValues[sVal].slice(0, 3)" 
-                          :key="tVal"
-                          class="tw:text-[9px] tw:px-1.5 tw:py-0.5 tw:rounded-md tw:bg-primary/5 tw:text-primary/70 tw:border tw:border-primary/10"
-                        >
-                          {{ tVal }}
-                        </span>
-                        <span v-if="cardData.tertiaryValues[sVal].length > 3" class="tw:text-[9px] tw:text-grey-5">
-                          +{{ cardData.tertiaryValues[sVal].length - 3 }}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      v-if="cardData.childValues.length > 10"
-                      class="tw:text-xs tw:text-primary tw:font-medium tw:cursor-pointer hover:tw:underline tw:self-center"
-                      @click="primaryDim && openFieldDetails(primaryDim)"
-                    >
-                      +{{ cardData.childValues.length - 10 }} more
+                      <span class="tw:w-2 tw:h-2 tw:rounded-full"
+                        :class="{ 'tw:bg-blue-500': sd.streamType === 'logs', 'tw:bg-orange-500': sd.streamType === 'traces', 'tw:bg-green-500': sd.streamType === 'metrics' }"
+                      />
+                      <span class="tw:capitalize">{{ sd.streamType }}</span>
+                      <span class="tw:font-medium">{{ sd.streamNames.length }}</span>
                     </div>
                   </div>
                 </div>
               </template>
 
-              <!-- Found In stream chips -->
-              <div class="tw:flex tw:items-center tw:gap-4 tw:mt-1 tw:pl-[17px] tw:border-t tw:pt-4 dark:tw:border-grey-9">
-                <span class="tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-widest tw:text-grey-4">Found in</span>
-                <div class="tw:flex tw:items-center tw:gap-2">
-                  <div
-                    v-for="st in (primaryDim?.stream_types ?? [])"
-                    :key="st"
-                    class="tw:flex tw:items-center tw:gap-1.5 tw:px-2 tw:py-1 tw:rounded tw:text-[10px] tw:font-bold tw:uppercase tw:tracking-tighter tw:cursor-pointer tw:transition-opacity hover:tw:opacity-80"
-                    :class="{
-                      'tw:bg-blue-1 tw:text-blue-7': st === 'logs',
-                      'tw:bg-orange-1 tw:text-orange-7': st === 'traces',
-                      'tw:bg-green-1 tw:text-green-7': st === 'metrics'
-                    }"
-                    @click.stop="primaryDim && openFieldDetails(primaryDim, st)"
-                  >
-                    <q-icon :name="st === 'logs' ? 'description' : st === 'traces' ? 'timeline' : 'insights'" size="12px" />
-                    {{ st }}
+              <q-separator :class="store.state.theme === 'dark' ? 'tw:!bg-grey-8' : ''" class="tw:mb-3 tw:shrink-0" />
+
+              <!-- Card-level: all values with bars -->
+              <template v-if="(insightData as any).isCardLevel && insightData.children.length > 0">
+                <div class="tw:text-[11px] tw:font-medium tw:mb-3"
+                  :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-5'"
+                >All values ({{ insightData.children.length }})</div>
+                <div class="tw:flex tw:flex-col tw:gap-2.5">
+                  <div v-for="child in insightData.children" :key="child.name" class="tw:flex tw:flex-col tw:gap-1">
+                    <div class="tw:flex tw:items-center tw:justify-between tw:text-xs">
+                      <span class="tw:truncate tw:min-w-0 tw:font-medium">{{ child.name }}</span>
+                      <span class="tw:shrink-0 tw:ml-2 tw:tabular-nums"
+                        :class="store.state.theme === 'dark' ? 'tw:text-grey-4' : 'tw:text-grey-6'"
+                      >{{ child.count }} {{ insightData.childCountLabel }}</span>
+                    </div>
+                    <div class="tw:w-full tw:h-2 tw:rounded-full tw:overflow-hidden"
+                      :class="store.state.theme === 'dark' ? 'tw:bg-grey-8' : 'tw:bg-grey-2'"
+                    >
+                      <div class="tw:h-full tw:rounded-full tw:transition-all"
+                        :class="insightDialogLevel === 'primary' ? 'tw:bg-blue-5' : insightDialogLevel === 'secondary' ? 'tw:bg-teal-5' : 'tw:bg-purple-5'"
+                        :style="{ width: `${Math.max((child.count / insightData.maxChildCount) * 100, 6)}%` }"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
+              </template>
 
-        <!-- Recommendation Banner -->
-        <div
-          v-if="suggestedConfig && activeEnvGroups.length > 0"
-          class="tw:mt-6 tw:flex tw:items-center tw:gap-4 tw:px-5 tw:py-4 tw:rounded-xl tw:border tw:shadow-sm"
-          :class="store.state.theme === 'dark' ? 'tw:bg-grey-9 tw:border-grey-8' : 'tw:bg-white tw:border-grey-2'"
-        >
-          <div class="tw:bg-positive/10 tw:p-2 tw:rounded-full">
-            <q-icon name="check" color="positive" size="sm" />
-          </div>
-          <div class="tw:flex tw:flex-col tw:flex-1 tw:min-w-0">
-            <div class="tw:flex tw:items-baseline tw:gap-2">
-              <span class="tw:font-bold tw:text-sm tw:text-grey-9 dark:tw:text-grey-2">
-                {{ suggestedConfig.distinguish_by.map(id => getGroupByValue(id)?.display ?? id).join(' + ') }}
-              </span>
-              <span class="tw:text-xs tw:font-bold tw:text-positive tw:uppercase tw:tracking-tight">recommended for service disambiguation</span>
-            </div>
-            <span class="tw:text-xs tw:text-grey-6 tw:mt-0.5">{{ suggestedConfig.reason }}</span>
-          </div>
-          <div class="tw:flex tw:gap-3 tw:shrink-0">
-            <q-btn
-              no-caps
-              unelevated
-              size="sm"
-              color="primary"
-              label="Use Recommended"
-              class="tw:px-4 tw:py-2 tw:rounded-lg tw:font-bold"
-              @click="applySuggestion"
-            />
-          </div>
-        </div>
+              <!-- Single-value: dimension columns with drill-down -->
+              <template v-if="!(insightData as any).isCardLevel && (insightData as any).relatedDimensions?.length > 0">
+                <div class="tw:flex tw:flex-1 tw:min-h-0 tw:py-3">
+                  <div
+                    v-for="(dim, dimIdx) in (insightData as any).relatedDimensions"
+                    :key="dim.label + dimIdx"
+                    class="tw:flex-1 tw:min-w-0 tw:flex tw:flex-col tw:px-3"
+                    :class="[
+                      dimIdx > 0
+                        ? (store.state.theme === 'dark' ? 'tw:border-l tw:border-grey-8' : 'tw:border-l tw:border-grey-3')
+                        : ''
+                    ]"
+                  >
+                    <div class="tw:text-[13px] tw:font-bold tw:mb-2"
+                      :class="store.state.theme === 'dark' ? 'tw:text-grey-3' : 'tw:text-grey-8'"
+                    >{{ dim.label }} <span class="tw:font-normal" :class="store.state.theme === 'dark' ? 'tw:text-grey-5' : 'tw:text-grey-5'">({{ getFilteredDimValues((insightData as any).relatedDimensions, dimIdx).length }})</span></div>
+                    <div class="tw:flex tw:flex-col tw:gap-1 tw:flex-1 tw:overflow-y-auto tw:min-h-0">
+                      <span
+                        v-for="dVal in getFilteredDimValues((insightData as any).relatedDimensions, dimIdx)"
+                        :key="dVal"
+                        class="tw:text-[13px] tw:py-1 tw:px-2.5 tw:rounded-md tw:border tw:cursor-pointer tw:transition-all tw:truncate tw:shrink-0"
+                        :class="[
+                          insightSelectedDim[dimIdx] === dVal
+                            ? 'tw:font-semibold'
+                            : {
+                                'tw:bg-teal-10/30 tw:border-teal-9/50 tw:text-teal-3': dim.color === 'teal' && store.state.theme === 'dark',
+                                'tw:bg-teal-1/50 tw:border-teal-2 tw:text-teal-8': dim.color === 'teal' && store.state.theme !== 'dark',
+                                'tw:bg-purple-10/30 tw:border-purple-9/50 tw:text-purple-3': dim.color === 'purple' && store.state.theme === 'dark',
+                                'tw:bg-purple-1/50 tw:border-purple-2 tw:text-purple-8': dim.color === 'purple' && store.state.theme !== 'dark',
+                                'tw:bg-blue-10/30 tw:border-blue-9/50 tw:text-blue-3': dim.color === 'blue' && store.state.theme === 'dark',
+                                'tw:bg-blue-1/50 tw:border-blue-2 tw:text-blue-8': dim.color === 'blue' && store.state.theme !== 'dark',
+                              },
+                          'hover:tw:opacity-70'
+                        ]"
+                        :style="insightSelectedDim[dimIdx] === dVal ? getDimSelectedStyle(dim.color) : undefined"
+                        :title="dVal"
+                        @click.stop="selectDimValue(dimIdx, dVal)"
+                      >{{ dVal }}</span>
+                      <span v-if="getFilteredDimValues((insightData as any).relatedDimensions, dimIdx).length === 0" class="tw:text-xs tw:italic"
+                        :class="store.state.theme === 'dark' ? 'tw:text-grey-6' : 'tw:text-grey-5'"
+                      >No values</span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </q-card-section>
+          </q-card>
+        </q-dialog>
+
       </div>
 
       <!-- Section 3: Warnings -->
@@ -551,7 +891,8 @@ import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useStore } from "vuex";
 import { useQuasar } from "quasar";
 import { useI18n } from "vue-i18n";
-import GroupHeader from "@/components/common/GroupHeader.vue";
+import CustomChartRenderer from "@/components/dashboards/panels/CustomChartRenderer.vue";
+import TagInput from "@/components/alerts/TagInput.vue";
 import serviceStreamsService from "@/services/service_streams";
 import type {
   ServiceIdentityConfig,
@@ -559,6 +900,7 @@ import type {
   DimensionAnalytics,
   DimensionAnalyticsSummary,
   FoundGroup,
+  FieldAlias,
 } from "@/services/service_streams";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -578,6 +920,7 @@ interface SuggestedConfig {
 
 const props = defineProps<{
   orgIdentifier: string;
+  semanticGroups?: FieldAlias[];
 }>();
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
@@ -604,6 +947,7 @@ const dimensionAnalytics = ref<Record<string, DimensionAnalytics>>({});
 /** Section 2: pill-based field configuration */
 const addingToEnv = ref<string>('');
 const addFieldValue = ref('');
+const addFieldFilter = ref('');
 
 /** All env keys that have at least one configured field, ordered by detected env order */
 const allConfiguredEnvs = computed(() => {
@@ -624,6 +968,14 @@ const addFieldSelectRef = ref<any>(null);
 
 /** Configured fields for the active env (non-empty IDs only) */
 const configuredFields = computed(() => distinguishBy.value.filter(Boolean));
+
+/** Whether the suggested config already matches what's currently selected */
+const suggestionAlreadyApplied = computed(() => {
+  if (!suggestedConfig.value?.distinguish_by?.length) return false;
+  const suggested = [...suggestedConfig.value.distinguish_by].sort();
+  const current = [...configuredFields.value].sort();
+  return suggested.length === current.length && suggested.every((v, i) => v === current[i]);
+});
 
 /** Display label for the active environment tab */
 const activeEnvLabel = computed(() =>
@@ -752,6 +1104,13 @@ watch(activeEnvironment, () => {
   addFieldValue.value = '';
 });
 
+/** Re-show recommendation when user changes fields away from the suggested config */
+watch(configuredFields, () => {
+  if (suggestionDismissed.value && !suggestionAlreadyApplied.value) {
+    suggestionDismissed.value = false;
+  }
+});
+
 /** Coverage % badge value for the active environment tab */
 const activeEnvCoverage = computed(() => {
   if (!totalServices.value || activeEnvGroups.value.length === 0) return null;
@@ -771,7 +1130,30 @@ const activeEnvCoverage = computed(() => {
 
 const emit = defineEmits<{
   (e: "navigate-to-aliases", groupId: string): void;
+  (e: "navigate-to-services"): void;
+  (e: "update-service-fields", fields: string[]): void;
 }>();
+
+// ─── Field Mapping Dialog ────────────────────────────────────────────────────
+
+const showFieldMappingDialog = ref(false);
+const editableServiceFields = ref<string[]>([]);
+const savingFieldMappings = ref(false);
+
+function openFieldMappingDialog() {
+  editableServiceFields.value = [...allServiceFieldNames.value];
+  showFieldMappingDialog.value = true;
+}
+
+async function saveFieldMappings() {
+  savingFieldMappings.value = true;
+  try {
+    emit("update-service-fields", editableServiceFields.value);
+    showFieldMappingDialog.value = false;
+  } finally {
+    savingFieldMappings.value = false;
+  }
+}
 
 // ─── Computed ─────────────────────────────────────────────────────────────────
 
@@ -781,6 +1163,573 @@ const serviceGroup = computed<FoundGroup | undefined>(() =>
 );
 const serviceGroupDisplay = computed(() => serviceGroup.value?.display ?? "Service");
 const serviceGroupStreamTypes = computed(() => serviceGroup.value?.stream_types ?? []);
+
+/** Service name banner: expanded/collapsed toggle */
+const serviceNameExpanded = ref(false);
+
+/** Color themes for up to 5 dimension stat cards */
+const DIM_CARD_THEMES = [
+  { // blue
+    icon: 'cloud',
+    iconClass: 'tw:text-blue-5',
+    countClass: 'tw:text-blue-6',
+    borderDark: 'border: 1px solid rgba(59,130,246,0.4); background: rgba(59,130,246,0.06)',
+    borderLight: 'border: 1px solid rgba(59,130,246,0.3); background: rgba(59,130,246,0.05)',
+    pillDark: 'tw:bg-blue-10/30 tw:border-blue-9/50 tw:text-blue-3',
+    pillLight: 'tw:bg-blue-1/50 tw:border-blue-2 tw:text-blue-8',
+  },
+  { // teal
+    icon: 'folder_open',
+    iconClass: 'tw:text-teal-5',
+    countClass: 'tw:text-teal-6',
+    borderDark: 'border: 1px solid rgba(20,184,166,0.4); background: rgba(20,184,166,0.06)',
+    borderLight: 'border: 1px solid rgba(20,184,166,0.3); background: rgba(20,184,166,0.05)',
+    pillDark: 'tw:bg-teal-10/30 tw:border-teal-9/50 tw:text-teal-3',
+    pillLight: 'tw:bg-teal-1/50 tw:border-teal-2 tw:text-teal-8',
+  },
+  { // purple
+    icon: 'widgets',
+    iconClass: 'tw:text-purple-5',
+    countClass: 'tw:text-purple-6',
+    borderDark: 'border: 1px solid rgba(168,85,247,0.4); background: rgba(168,85,247,0.06)',
+    borderLight: 'border: 1px solid rgba(168,85,247,0.3); background: rgba(168,85,247,0.05)',
+    pillDark: 'tw:bg-purple-10/30 tw:border-purple-9/50 tw:text-purple-3',
+    pillLight: 'tw:bg-purple-1/50 tw:border-purple-2 tw:text-purple-8',
+  },
+  { // amber
+    icon: 'lan',
+    iconClass: 'tw:text-amber-5',
+    countClass: 'tw:text-amber-6',
+    borderDark: 'border: 1px solid rgba(245,158,11,0.4); background: rgba(245,158,11,0.06)',
+    borderLight: 'border: 1px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.05)',
+    pillDark: 'tw:bg-amber-10/30 tw:border-amber-9/50 tw:text-amber-3',
+    pillLight: 'tw:bg-amber-1/50 tw:border-amber-2 tw:text-amber-8',
+  },
+  { // rose
+    icon: 'hub',
+    iconClass: 'tw:text-red-4',
+    countClass: 'tw:text-red-5',
+    borderDark: 'border: 1px solid rgba(244,63,94,0.4); background: rgba(244,63,94,0.06)',
+    borderLight: 'border: 1px solid rgba(244,63,94,0.3); background: rgba(244,63,94,0.05)',
+    pillDark: 'tw:bg-red-10/30 tw:border-red-9/50 tw:text-red-3',
+    pillLight: 'tw:bg-red-1/50 tw:border-red-2 tw:text-red-8',
+  },
+] as const;
+
+/** Summary counts + top values for each ranked dimension (up to 5) */
+const workloadSummary = computed(() => {
+  const cards = primaryDimCards.value;
+  const dims = rankedDims.value;
+
+  // Build values for primary (from cards keys), secondary (from childValues), tertiary (from tertiaryValues)
+  const primaryValues = Object.keys(cards);
+  const allSecondaryVals = new Set<string>();
+  const allTertiaryVals = new Set<string>();
+  for (const card of Object.values(cards)) {
+    for (const cv of card.childValues) allSecondaryVals.add(cv);
+    for (const tVals of Object.values(card.tertiaryValues)) {
+      for (const v of tVals) allTertiaryVals.add(v);
+    }
+  }
+  const builtInValues: string[][] = [
+    primaryValues,
+    Array.from(allSecondaryVals),
+    Array.from(allTertiaryVals),
+  ];
+
+  // Build per-dim summaries for all ranked dims (up to 5)
+  const dimSummaries = dims.slice(0, 5).map((dim, i) => {
+    let values: string[];
+    let count: number;
+    if (i < 3) {
+      values = builtInValues[i];
+      count = values.length;
+    } else {
+      const da = dimensionAnalytics.value[dim.group_id];
+      values = da?.value_children ? Object.keys(da.value_children) : [];
+      count = da?.cardinality ?? dim.unique_values ?? values.length;
+    }
+    return {
+      dim,
+      label: pluralize(dim.display),
+      singularLabel: dim.display,
+      count,
+      values,
+    };
+  });
+
+  return {
+    dims: dimSummaries,
+    // Backward-compat accessors used by insightData
+    primaryLabel: dimSummaries[0]?.label ?? '',
+    primarySingularLabel: dimSummaries[0]?.singularLabel ?? '',
+    primaryCount: dimSummaries[0]?.count ?? 0,
+    primaryValues,
+    secondaryLabel: dimSummaries[1]?.label ?? '',
+    secondarySingularLabel: dimSummaries[1]?.singularLabel ?? '',
+    secondaryCount: dimSummaries[1]?.count ?? 0,
+    secondaryValues: Array.from(allSecondaryVals),
+    tertiaryLabel: dimSummaries[2]?.label ?? '',
+    tertiarySingularLabel: dimSummaries[2]?.singularLabel ?? '',
+    tertiaryCount: dimSummaries[2]?.count ?? 0,
+    tertiaryValues: Array.from(allTertiaryVals),
+  };
+});
+
+/** Dynamic dim cards — built from workloadSummary.dims + themes */
+const dimCards = computed(() => {
+  const levels: Array<'primary' | 'secondary' | 'tertiary'> = ['primary', 'secondary', 'tertiary'];
+  return workloadSummary.value.dims
+    .map((s, i) => ({
+      dim: s.dim,
+      theme: DIM_CARD_THEMES[i] ?? DIM_CARD_THEMES[0],
+      level: levels[i] ?? ('tertiary' as const),
+      label: s.singularLabel,
+      count: s.count,
+      values: s.values,
+    }))
+    .filter(c => c.count > 0 || c.values.length > 0);
+});
+
+/** Open insight dialog by card index */
+function openInsightDialogByIdx(value: string, idx: number) {
+  const levels: Array<'primary' | 'secondary' | 'tertiary'> = ['primary', 'secondary', 'tertiary'];
+  openInsightDialog(value, levels[idx] ?? 'tertiary');
+}
+
+/** Workload insight popup state */
+const insightDialogOpen = ref(false);
+const insightDialogValue = ref('');
+const insightDialogLevel = ref<'primary' | 'secondary' | 'tertiary'>('primary');
+/** Tracks selected pill per dimension column for drill-down filtering (dimIdx → selected value) */
+const insightSelectedDim = ref<Record<number, string>>({});
+
+function openInsightDialog(value: string, level: 'primary' | 'secondary' | 'tertiary') {
+  insightDialogValue.value = value;
+  insightDialogLevel.value = level;
+  insightSelectedDim.value = {};  // Reset drill-down selections
+  insightDialogOpen.value = true;
+}
+
+/** When a dimension pill is clicked inside the insight dialog, filter the next column */
+function selectDimValue(dimIdx: number, value: string) {
+  const current = { ...insightSelectedDim.value };
+  if (current[dimIdx] === value) {
+    // Deselect if clicking same pill
+    delete current[dimIdx];
+    // Also clear any downstream selections
+    for (const k of Object.keys(current)) {
+      if (Number(k) > dimIdx) delete current[Number(k)];
+    }
+  } else {
+    current[dimIdx] = value;
+    // Clear downstream selections
+    for (const k of Object.keys(current)) {
+      if (Number(k) > dimIdx) delete current[Number(k)];
+    }
+  }
+  insightSelectedDim.value = current;
+}
+
+/** Get filtered values for a dimension column based on upstream selections.
+ *  Uses the same approach as getPopupColumnValues — queries dimensionAnalytics directly. */
+function getFilteredDimValues(dimensions: any[], dimIdx: number): string[] {
+  const dim = dimensions[dimIdx];
+  if (!dim) return [];
+
+  const prevIdx = dimIdx - 1;
+  const prevSelected = insightSelectedDim.value[prevIdx];
+
+  // First column or no upstream selection → show all values
+  if (prevIdx < 0 || !prevSelected) return dim.values;
+
+  // Query dimensionAnalytics directly (same as getPopupColumnValues)
+  const prevDim = dimensions[prevIdx];
+  if (prevDim?.groupId && dim.groupId) {
+    const prevAnalytics = dimensionAnalytics.value[prevDim.groupId];
+    const filtered = prevAnalytics?.value_children?.[prevSelected]?.[dim.groupId] ?? [];
+    if (filtered.length > 0) return filtered.slice().sort();
+  }
+
+  // Fallback: show all values
+  return dim.values;
+}
+
+/** Returns inline style for selected dimension pill — subtle primary highlight */
+function getDimSelectedStyle(_color: string): Record<string, string> {
+  const isDark = store.state.theme === 'dark';
+  return {
+    backgroundColor: isDark ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.1)',
+    borderColor: isDark ? 'rgba(59,130,246,0.5)' : 'rgba(59,130,246,0.4)',
+    color: isDark ? '#93c5fd' : '#1d4ed8',
+    fontWeight: '600',
+  };
+}
+
+/** Build insight data for the currently open popup */
+const insightData = computed(() => {
+  const val = insightDialogValue.value;
+  const level = insightDialogLevel.value;
+  const cards = primaryDimCards.value;
+  const isCardLevel = val === '';
+
+  if (level === 'primary') {
+    const group = primaryDim.value;
+    const dim = group ? dimensionAnalytics.value[group.group_id] : null;
+
+    if (isCardLevel) {
+      // Card-level: show ALL primary values with their secondary/tertiary counts
+      const allValues = Object.keys(cards);
+      const children = allValues.map(pVal => {
+        const card = cards[pVal];
+        const secondaryCount = card?.childValues?.length ?? 0;
+        const tertiaryCount = Object.values(card?.tertiaryValues ?? {}).reduce((sum, arr) => sum + arr.length, 0);
+        return { name: pVal, count: secondaryCount, tertiaryCount };
+      });
+      children.sort((a, b) => b.count - a.count);
+      return {
+        title: workloadSummary.value.primaryLabel,
+        subtitle: `${allValues.length} unique values detected`,
+        coverage: null,
+        count: null,
+        total: dim?.service_count ?? null,
+        childLabel: '',
+        childCountLabel: secondaryDim.value ? pluralize(secondaryDim.value.display).toLowerCase() : '',
+        tertiaryCountLabel: tertiaryDim.value ? pluralize(tertiaryDim.value.display).toLowerCase() : '',
+        children,
+        maxChildCount: Math.max(...children.map(c => c.count), 1),
+        isCardLevel: true,
+      };
+    }
+
+    const card = cards[val];
+    const coverage = group ? getValueCoverage(group, val) : null;
+    const count = dim?.value_counts?.[val] ?? null;
+    const total = dim?.service_count ?? null;
+
+    const streamDetails = group ? getValueStreamDetails(group.group_id, val) : [];
+
+    // Build dimension columns (no stream columns — chart handles that)
+    const relatedDimensions: { label: string; level: string; color: string; values: string[]; groupId?: string }[] = [];
+    if (card && secondaryDim.value) {
+      relatedDimensions.push({
+        label: secondaryDim.value.display,
+        level: 'secondary',
+        color: 'teal',
+        values: card.childValues,
+        groupId: secondaryDim.value.group_id,
+      });
+      if (tertiaryDim.value) {
+        // All tertiary values from this card
+        const allTertiary = new Set<string>();
+        for (const tvs of Object.values(card.tertiaryValues)) {
+          for (const tv of tvs) allTertiary.add(tv);
+        }
+        relatedDimensions.push({
+          label: tertiaryDim.value.display,
+          level: 'tertiary',
+          color: 'purple',
+          values: [...allTertiary].sort(),
+          groupId: tertiaryDim.value.group_id,
+        });
+      }
+    }
+
+    // Keep children for backward compat (card-level uses it)
+    const children: { name: string; count: number }[] = [];
+    if (card && secondaryDim.value) {
+      for (const cv of card.childValues) {
+        children.push({ name: cv, count: card.tertiaryValues[cv]?.length ?? 0 });
+      }
+      children.sort((a, b) => b.count - a.count);
+    }
+    return {
+      title: val,
+      subtitle: group?.display ?? '',
+      coverage,
+      count,
+      total,
+      childLabel: secondaryDim.value ? pluralize(secondaryDim.value.display) : '',
+      childCountLabel: tertiaryDim.value ? pluralize(tertiaryDim.value.display).toLowerCase() : '',
+      children,
+      maxChildCount: Math.max(...children.map(c => c.count), 1),
+      relatedDimensions,
+      isCardLevel: false,
+      streamTypes: group ? getValueStreamTypes(group.group_id, val) : [],
+      streamDetails,
+    };
+  }
+
+  if (level === 'secondary') {
+    const group = secondaryDim.value;
+    const dim = group ? dimensionAnalytics.value[group.group_id] : null;
+
+    if (isCardLevel) {
+      // Card-level: show ALL secondary values with their tertiary counts
+      const allVals = workloadSummary.value.secondaryValues;
+      const children = allVals.map(sVal => {
+        const tertiaryVals = getSecondaryTertiaryValues(sVal);
+        // Find which primaries contain this secondary
+        let parentCount = 0;
+        for (const card of Object.values(cards)) {
+          if (card.childValues.includes(sVal)) parentCount++;
+        }
+        return { name: sVal, count: tertiaryVals.length, parentCount };
+      });
+      children.sort((a, b) => b.count - a.count);
+      return {
+        title: workloadSummary.value.secondaryLabel,
+        subtitle: `${allVals.length} unique values detected`,
+        coverage: null,
+        count: null,
+        total: dim?.service_count ?? null,
+        childLabel: '',
+        childCountLabel: tertiaryDim.value ? pluralize(tertiaryDim.value.display).toLowerCase() : '',
+        parentCountLabel: primaryDim.value ? pluralize(primaryDim.value.display).toLowerCase() : '',
+        children,
+        maxChildCount: Math.max(...children.map(c => c.count), 1),
+        isCardLevel: true,
+      };
+    }
+
+    const coverage = group ? getValueCoverage(group, val) : null;
+    const count = dim?.value_counts?.[val] ?? null;
+    const total = dim?.service_count ?? null;
+    const parents: string[] = [];
+    for (const [pVal, card] of Object.entries(cards)) {
+      if (card.childValues.includes(val)) parents.push(pVal);
+    }
+    const tertiaryVals = getSecondaryTertiaryValues(val);
+
+    const streamDetails = group ? getValueStreamDetails(group.group_id, val) : [];
+    const relatedDimensions: { label: string; level: string; color: string; values: string[]; groupId?: string }[] = [];
+    if (primaryDim.value && parents.length > 0) {
+      relatedDimensions.push({
+        label: primaryDim.value.display,
+        level: 'primary',
+        color: 'blue',
+        values: parents.sort(),
+        groupId: primaryDim.value.group_id,
+      });
+    }
+    if (tertiaryDim.value && tertiaryVals.length > 0) {
+      relatedDimensions.push({
+        label: tertiaryDim.value.display,
+        level: 'tertiary',
+        color: 'purple',
+        values: tertiaryVals,
+        groupId: tertiaryDim.value.group_id,
+      });
+    }
+
+    return {
+      title: val,
+      subtitle: group?.display ?? '',
+      coverage,
+      count,
+      total,
+      childLabel: primaryDim.value ? `Found in ${pluralize(primaryDim.value.display).toLowerCase()}` : '',
+      childCountLabel: '',
+      children: parents.map(p => ({ name: p, count: 0 })),
+      maxChildCount: 1,
+      tertiaryLabel: tertiaryDim.value ? pluralize(tertiaryDim.value.display) : '',
+      tertiaryValues: tertiaryVals,
+      relatedDimensions,
+      isCardLevel: false,
+      streamTypes: group ? getValueStreamTypes(group.group_id, val) : [],
+      streamDetails,
+    };
+  }
+
+  // tertiary
+  const group = tertiaryDim.value;
+  const dim = group ? dimensionAnalytics.value[group.group_id] : null;
+
+  if (isCardLevel) {
+    // Card-level: show ALL tertiary values with their locations
+    const allVals = workloadSummary.value.tertiaryValues;
+    const children = allVals.map(tVal => {
+      const locs = getTertiaryLocations(tVal);
+      return { name: tVal, count: locs.length };
+    });
+    children.sort((a, b) => b.count - a.count);
+    return {
+      title: workloadSummary.value.tertiaryLabel,
+      subtitle: `${allVals.length} unique values detected`,
+      coverage: null,
+      count: null,
+      total: dim?.service_count ?? null,
+      childLabel: '',
+      childCountLabel: 'locations',
+      children,
+      maxChildCount: Math.max(...children.map(c => c.count), 1),
+      isCardLevel: true,
+    };
+  }
+
+  const coverage = group ? getValueCoverage(group, val) : null;
+  const count = dim?.value_counts?.[val] ?? null;
+  const total = dim?.service_count ?? null;
+  const locations = getTertiaryLocations(val);
+
+  const streamDetails = group ? getValueStreamDetails(group.group_id, val) : [];
+  const relatedDimensions: { label: string; level: string; color: string; values: string[]; groupId?: string }[] = [];
+  if (primaryDim.value && locations.length > 0) {
+    const uniquePrimaries = [...new Set(locations.map(l => l.primary))].sort();
+    relatedDimensions.push({
+      label: primaryDim.value.display,
+      level: 'primary',
+      color: 'blue',
+      values: uniquePrimaries,
+      groupId: primaryDim.value.group_id,
+    });
+  }
+  if (secondaryDim.value && locations.length > 0) {
+    const uniqueSecondaries = [...new Set(locations.map(l => l.secondary))].sort();
+    relatedDimensions.push({
+      label: secondaryDim.value.display,
+      level: 'secondary',
+      color: 'teal',
+      values: uniqueSecondaries,
+      groupId: secondaryDim.value.group_id,
+    });
+  }
+
+  return {
+    title: val,
+    subtitle: group?.display ?? '',
+    coverage,
+    count,
+    total,
+    childLabel: 'Runs in',
+    childCountLabel: '',
+    children: [] as { name: string; count: number }[],
+    maxChildCount: 1,
+    locations,
+    relatedDimensions,
+    isCardLevel: false,
+    streamTypes: group ? getValueStreamTypes(group.group_id, val) : [],
+    streamDetails,
+  };
+});
+
+/** Chart data for insight dialog — stream contribution donut */
+const STREAM_TYPE_COLORS: Record<string, string> = { logs: '#3b82f6', traces: '#f59e0b', metrics: '#22c55e' };
+
+const insightChartData = computed(() => {
+  if (!insightDialogOpen.value) return { options: {} };
+
+  const isDark = store.state.theme === 'dark';
+  const data = insightData.value;
+  const streamDetails: { streamType: string; streamNames: string[] }[] = (data as any).streamDetails ?? [];
+
+  // Build pie data from stream details: each slice = one stream type, value = number of streams
+  const pieData = streamDetails.map(sd => ({
+    name: sd.streamType.charAt(0).toUpperCase() + sd.streamType.slice(1),
+    value: sd.streamNames.length,
+    streamNames: sd.streamNames,
+  }));
+
+  const totalStreams = pieData.reduce((sum, d) => sum + d.value, 0);
+
+  return {
+    options: {
+      tooltip: {
+        trigger: 'item',
+        enterable: true,
+        appendToBody: true,
+        confine: false,
+        textStyle: {
+          color: isDark ? '#fff' : '#000',
+          fontSize: 12,
+        },
+        backgroundColor: isDark ? 'rgba(0,0,0,1)' : 'rgba(255,255,255,1)',
+        extraCssText: 'max-height: 240px; overflow-y: auto;',
+        formatter: function (params: any) {
+          const names: string[] = params.data?.streamNames ?? [];
+          const header = `${params.marker} ${params.name} : <b>${params.value} streams (${params.percent}%)</b>`;
+          if (!names.length) return header;
+          const list = names.map(n =>
+            `<div style="padding:1px 0;padding-left:14px;font-size:11px;">${n}</div>`
+          ).join('');
+          return header + '<div style="margin-top:4px;">' + list + '</div>';
+        },
+      },
+      color: streamDetails.map(sd => STREAM_TYPE_COLORS[sd.streamType] ?? '#9ca3af'),
+      series: [{
+        type: 'pie',
+        radius: ['50%', '78%'],
+        center: ['50%', '50%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 4,
+          borderColor: isDark ? '#111827' : '#fff',
+          borderWidth: 2,
+        },
+        label: { show: false },
+        emphasis: {
+          label: { show: false },
+          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.2)' },
+        },
+        data: pieData,
+      }],
+      graphic: totalStreams > 0 ? [{
+        type: 'text',
+        left: 'center',
+        top: 'center',
+        style: {
+          text: `${totalStreams}`,
+          fontSize: 22,
+          fontWeight: 'bold',
+          fill: isDark ? '#e5e7eb' : '#1f2937',
+          textAlign: 'center',
+        },
+        subtextStyle: {
+          text: 'streams',
+          fontSize: 10,
+        },
+      }] : [],
+    },
+  };
+});
+
+/** Unique field names actually found in data (from FoundGroup.aliases) with their stream types */
+const detectedServiceFields = computed<{ name: string; streamTypes: string[] }[]>(() => {
+  const aliases = serviceGroup.value?.aliases;
+  if (!aliases) return [];
+  // Invert: group by field name → which stream types use it
+  const fieldMap = new Map<string, string[]>();
+  for (const [streamType, fieldName] of Object.entries(aliases)) {
+    if (!fieldMap.has(fieldName)) fieldMap.set(fieldName, []);
+    fieldMap.get(fieldName)!.push(streamType);
+  }
+  return Array.from(fieldMap.entries())
+    .map(([name, streamTypes]) => ({ name, streamTypes }))
+    .sort((a, b) => b.streamTypes.length - a.streamTypes.length);
+});
+
+/** All configured field names from semantic groups (includes ones not yet seen in data) */
+const allServiceFieldNames = computed<string[]>(() => {
+  const group = props.semanticGroups?.find((g) => g.id === "service");
+  return group?.fields ?? [];
+});
+
+/** Configured fields NOT found in data — shown as grey pills in expanded view */
+const unseenServiceFields = computed<string[]>(() => {
+  const detectedNames = new Set(detectedServiceFields.value.map((f) => f.name));
+  return allServiceFieldNames.value.filter((f) => !detectedNames.has(f));
+});
+
+/** Summary text for collapsed banner: first 2 field names + "+N more" */
+const serviceFieldSummary = computed(() => {
+  const fields = detectedServiceFields.value;
+  const shown = fields.slice(0, 2).map((f) => f.name);
+  const remaining = fields.length - shown.length + unseenServiceFields.value.length;
+  return { shown, remaining };
+});
+
+/** Whether service name field is detected in any stream */
+const serviceNameDetected = computed(() => detectedServiceFields.value.length > 0);
 
 /** Currently selected field analytics mapping */
 const selectedFieldAnalytics = computed(() => {
@@ -1122,6 +2071,39 @@ function getEffectiveCardinalityClass(group?: FoundGroup): string {
   return dimensionAnalytics.value[group.group_id]?.cardinality_class || group.cardinality_class || "Unknown";
 }
 
+/** Get which stream types a specific value was found in for a dimension group */
+function getValueStreamTypes(groupId: string, value: string): string[] {
+  const dim = dimensionAnalytics.value[groupId];
+  if (!dim?.sample_values) return [];
+  const foundIn: string[] = [];
+  for (const [streamType, streamNames] of Object.entries(dim.sample_values)) {
+    for (const vals of Object.values(streamNames)) {
+      if (vals.includes(value)) {
+        foundIn.push(streamType);
+        break;
+      }
+    }
+  }
+  return foundIn;
+}
+
+/** Get detailed stream info: which stream type + which stream names contain this value */
+function getValueStreamDetails(groupId: string, value: string): { streamType: string; streamNames: string[] }[] {
+  const dim = dimensionAnalytics.value[groupId];
+  if (!dim?.sample_values) return [];
+  const result: { streamType: string; streamNames: string[] }[] = [];
+  for (const [streamType, streams] of Object.entries(dim.sample_values)) {
+    const names: string[] = [];
+    for (const [streamName, vals] of Object.entries(streams)) {
+      if (vals.includes(value)) names.push(streamName);
+    }
+    if (names.length > 0) {
+      result.push({ streamType, streamNames: names.sort() });
+    }
+  }
+  return result;
+}
+
 /** Get deduplicated unique values for a group across all stream types/names */
 function getGroupValues(group: FoundGroup): string[] {
   const dim = dimensionAnalytics.value[group.group_id];
@@ -1156,6 +2138,33 @@ function getValueCoverage(group: FoundGroup | undefined, value: string): number 
   return Math.round((count / dim.service_count) * 100);
 }
 
+/** For a secondary dim value, collect all tertiary values across all primary parents */
+function getSecondaryTertiaryValues(secondaryVal: string): string[] {
+  const cards = primaryDimCards.value;
+  const vals = new Set<string>();
+  for (const card of Object.values(cards)) {
+    const tVals = card.tertiaryValues[secondaryVal];
+    if (tVals) {
+      for (const v of tVals) vals.add(v);
+    }
+  }
+  return Array.from(vals).sort();
+}
+
+/** For a tertiary dim value, find all cluster→namespace locations where it runs */
+function getTertiaryLocations(tertiaryVal: string): { primary: string; secondary: string }[] {
+  const cards = primaryDimCards.value;
+  const locations: { primary: string; secondary: string }[] = [];
+  for (const [pVal, card] of Object.entries(cards)) {
+    for (const [sVal, tVals] of Object.entries(card.tertiaryValues)) {
+      if (tVals.includes(tertiaryVal)) {
+        locations.push({ primary: pVal, secondary: sVal });
+      }
+    }
+  }
+  return locations;
+}
+
 // ─── Field Management ─────────────────────────────────────────────────────────
 
 /** Generate a unique group ID for a manually-added group */
@@ -1174,23 +2183,60 @@ function removeFieldByIdFromEnv(envKey: string, fieldId: string) {
   };
 }
 
+/** Tooltip text explaining why a field is good for disambiguation */
+function getFieldCardinalityTooltip(fieldId: string): string | null {
+  const dim = dimensionAnalytics.value[fieldId];
+  const group = getGroupByValue(fieldId);
+  const count = dim?.cardinality ?? group?.unique_values;
+  const cardClass = dim?.cardinality_class ?? group?.cardinality_class;
+  if (count == null) return null;
+  const formatted = cardClass ? cardClass.replace(/([a-z])([A-Z])/g, '$1 $2') : '';
+  const classLabel = formatted ? ` (${formatted} cardinality)` : '';
+  return `${count} unique values${classLabel} — fewer values = better for grouping`;
+}
+
+/**
+ * Whether the current fields are from auto-suggestion (no saved config existed).
+ * We track this so we can show an inline hint only on first setup.
+ */
+const isAutoSuggested = computed(() => {
+  return !currentIdentityConfig.value?.sets?.length && allConfiguredEnvs.value.length > 0;
+});
+
 /** Options for the inline "add field" select for a specific env */
 function getAddFieldOptionsForEnv(envKey: string) {
-  const envFields = setDistinguishBy.value[envKey] ?? [];
-  const used = new Set([nameField, ...envFields.filter(Boolean)]);
+  // Exclude fields already added in the current env AND all other envs
+  const allUsedFields = Object.values(setDistinguishBy.value).flat().filter(Boolean);
+  const used = new Set([nameField, ...allUsedFields]);
+  const needle = addFieldFilter.value.toLowerCase();
   return availableGroups.value
     .filter(g => !used.has(g.group_id))
-    .map(g => ({
-      label: g.display,
-      value: g.group_id,
-      streamTypes: g.stream_types,
-      recommended: g.recommended,
-    }));
+    .filter(g => !needle || g.display.toLowerCase().includes(needle) || g.group_id.toLowerCase().includes(needle))
+    .map(g => {
+      const dim = dimensionAnalytics.value[g.group_id];
+      const cardClass = dim?.cardinality_class ?? g.cardinality_class ?? null;
+      return {
+        label: g.display,
+        value: g.group_id,
+        streamTypes: g.stream_types,
+        recommended: g.recommended,
+        uniqueValues: dim?.cardinality ?? g.unique_values ?? null,
+        cardinalityLabel: cardClass,
+        cardinalityColor: cardClass ? cardinalityColor(cardClass) : 'grey',
+      };
+    });
+}
+
+function onAddFieldFilter(val: string, update: (fn: () => void) => void) {
+  update(() => {
+    addFieldFilter.value = val;
+  });
 }
 
 /** Called when user picks a field in the inline select for a specific env */
 function onAddFieldToEnv(envKey: string, val: string) {
   if (!val) return;
+  addFieldFilter.value = '';
   const current = setDistinguishBy.value[envKey] ?? [];
   setDistinguishBy.value = {
     ...setDistinguishBy.value,
@@ -1206,6 +2252,11 @@ function applySuggestion() {
   }
   addingToEnv.value = '';
   suggestionDismissed.value = true;
+  $q.notify({
+    type: 'positive',
+    message: 'Recommended configuration applied. Click "Save Configuration" to save.',
+    timeout: 3000,
+  });
 }
 
 function dismissSuggestion() {
@@ -1421,4 +2472,39 @@ onMounted(() => {
     }
   }
 }
+
+.dim-stat-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.dim-stat-pills {
+  overflow: hidden;
+}
+
+.dim-stat-pill {
+  max-width: calc(50% - 4px);
+  height: 22px;
+  box-sizing: border-box;
+}
+
+.config-link-btn {
+  border: 1px solid #3b82f6;
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.08);
+  transition: background 0.15s;
+  &:hover {
+    background: rgba(59, 130, 246, 0.18);
+  }
+}
+
+.sis-dark .config-link-btn {
+  border-color: #60a5fa;
+  color: #93c5fd;
+  background: rgba(96, 165, 250, 0.12);
+  &:hover {
+    background: rgba(96, 165, 250, 0.22);
+  }
+}
+
 </style>

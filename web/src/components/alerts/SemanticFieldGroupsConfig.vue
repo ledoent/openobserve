@@ -408,7 +408,17 @@ onMounted(async () => {
       `[data-group-id="${props.scrollToGroupId}"]`
     ) as HTMLElement | null;
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Scroll within the nearest scrollable parent to avoid pushing
+      // ancestor containers (main page layout) out of view
+      const scrollParent = el.closest('.tw\\:overflow-y-auto') as HTMLElement | null;
+      if (scrollParent) {
+        const parentRect = scrollParent.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const offset = elRect.top - parentRect.top - (parentRect.height / 2) + (elRect.height / 2);
+        scrollParent.scrollBy({ top: offset, behavior: 'smooth' });
+      } else {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
       // Blink the border to draw attention
       el.classList.add("group-highlight");
       setTimeout(() => el.classList.remove("group-highlight"), 2000);
