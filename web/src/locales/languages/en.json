@@ -2900,7 +2900,6 @@
     "success": "SUCCESS",
     "today": "Today",
     "yesterday": "Yesterday",
-    "spanColorPalettePreview": "Span Color Palette Preview",
     "applyPendingFilters": "Apply pending filters and Search Traces",
     "backToTraces": "Back to Traces",
     "loadingTrace": "Loading...",
