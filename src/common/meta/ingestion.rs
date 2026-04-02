@@ -394,6 +394,7 @@ pub enum IngestionRequest {
     KinesisFH(KinesisFHRequest),
     RUM(Bytes),
     Usage(Bytes),
+    Sentry(Bytes),
 }
 
 impl IngestionRequest {

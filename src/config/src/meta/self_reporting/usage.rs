@@ -441,6 +441,8 @@ pub enum UsageType {
     NewIncident,
     #[serde(rename = "incident_reanalysis")]
     IncidentReAnalysis,
+    #[serde(rename = "/sentry")]
+    Sentry,
 }
 
 impl UsageType {
@@ -473,6 +475,7 @@ impl UsageType {
                 | UsageType::RUM
                 | UsageType::EnrichmentTable
                 | UsageType::Syslog
+                | UsageType::Sentry
         )
     }
 
@@ -522,6 +525,7 @@ impl std::fmt::Display for UsageType {
             UsageType::EnrichmentTable => write!(f, "enrichment_table"),
             UsageType::NewIncident => write!(f, "new_incident"),
             UsageType::IncidentReAnalysis => write!(f, "incident_reanalysis"),
+            UsageType::Sentry => write!(f, "/sentry"),
         }
     }
 }

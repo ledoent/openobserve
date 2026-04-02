@@ -185,6 +185,11 @@ pub async fn ingest(
             UsageType::RUM,
             IngestionData::Multi(req),
         ),
+        IngestionRequest::Sentry(req) => (
+            "/api/org/ingest/logs/_sentry",
+            UsageType::Sentry,
+            IngestionData::Multi(req),
+        ),
         IngestionRequest::Usage(req) => {
             json_req = json::from_slice(&req).unwrap_or({
                 let val: json::Value = json::from_slice(&req)?;
