@@ -47,6 +47,7 @@ pub mod reports;
 pub mod search_job;
 pub mod search_queue;
 pub mod service_streams;
+pub mod sentry_issues;
 pub mod sessions;
 pub mod short_urls;
 pub mod source_maps;
