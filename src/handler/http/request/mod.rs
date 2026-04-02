@@ -54,6 +54,7 @@ pub mod ratelimit;
 pub mod re_pattern;
 pub mod rum;
 pub mod search;
+pub mod sentry;
 pub mod service_accounts;
 pub mod service_streams;
 pub mod short_url;
