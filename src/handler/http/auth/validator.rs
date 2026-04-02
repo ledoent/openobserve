@@ -123,6 +123,37 @@ pub struct AuthValidationResult {
     pub is_internal_user: bool,
 }
 
+/// Validate a bearer token against an org and return the [`AuthValidationResult`].
+///
+/// `context` is a short label used in the error log (e.g. `"validator_rum"`).
+async fn validate_token_for_org(
+    token: &str,
+    org_id: &str,
+    context: &str,
+) -> Result<AuthValidationResult, AuthError> {
+    match validate_token(token, org_id).await {
+        Ok(_) => {
+            if let Some(user) = users::get_user_by_token(org_id, token).await {
+                Ok(AuthValidationResult {
+                    user_email: user.email,
+                    user_role: Some(user.role),
+                    is_internal_user: !user.is_external,
+                })
+            } else {
+                Ok(AuthValidationResult {
+                    user_email: String::new(),
+                    user_role: None,
+                    is_internal_user: false,
+                })
+            }
+        }
+        Err(e) => {
+            log::error!("{context}: token validation failed for org_id={org_id}: {e:?}");
+            Err(e)
+        }
+    }
+}
+
 /// Helper function to build a successful token validation response
 fn build_token_validation_response(user: &User) -> TokenValidationResponse {
     TokenValidationResponse {
@@ -826,39 +857,95 @@ pub async fn validator_rum(req_data: &RequestData) -> Result<AuthValidationResul
 
     let token = query.get("oo-api-key").or_else(|| query.get("o2-api-key"));
     match token {
-        Some(token) => match validate_token(token, org_id_end_point[0]).await {
-            Ok(_res) => {
-                // Get user from token to set user_id header
-                if let Some(user) = users::get_user_by_token(org_id_end_point[0], token).await {
-                    Ok(AuthValidationResult {
-                        user_email: user.email,
-                        user_role: Some(user.role),
-                        is_internal_user: !user.is_external,
-                    })
-                } else {
-                    Ok(AuthValidationResult {
-                        user_email: String::new(),
-                        user_role: None,
-                        is_internal_user: false,
-                    })
-                }
-            }
-            Err(err) => {
-                log::error!(
-                    "validate_token: Token not found for org_id: {}",
-                    org_id_end_point[0]
-                );
-                Err(err)
-            }
-        },
+        Some(token) => {
+            validate_token_for_org(token, org_id_end_point[0], "validator_rum").await
+        }
         None => {
             log::error!(
-                "validate_token: Missing api key for rum endpoint org_id: {}",
+                "validator_rum: missing api key for org_id={}",
                 org_id_end_point[0]
             );
             Err(AuthError::Unauthorized("Unauthorized Access".to_string()))
         }
     }
+}
+
+/// Validates Sentry SDK requests.
+///
+/// Extracts the org_id from the URL path (`/sentry/{org_id}/api/{project_id}/...`)
+/// and the API token from the `X-Sentry-Auth` header
+/// (`Sentry sentry_key={token},...`).
+///
+/// Falls back to `Authorization: Bearer {token}` if the header is absent.
+pub async fn validator_sentry(req_data: &RequestData) -> Result<AuthValidationResult, AuthError> {
+    // Path looks like: /sentry/{org_id}/api/{project_id}/envelope/ (with optional base_uri prefix)
+    let base_uri = &get_config().common.base_uri;
+    let path = req_data.uri.path();
+    let path = if !base_uri.is_empty() && base_uri != "/" {
+        path.strip_prefix(base_uri.as_str()).unwrap_or(path)
+    } else {
+        path
+    };
+    // After stripping base_uri the path starts with /sentry/{org_id}/api/...
+    let path = path.strip_prefix("/sentry/").unwrap_or(path);
+    let segments: Vec<&str> = path.splitn(4, '/').collect();
+    // segments[0] = org_id
+    let org_id = match segments.first() {
+        Some(id) if !id.is_empty() => *id,
+        _ => {
+            return Err(AuthError::Unauthorized(
+                "Unauthorized Access. Missing org_id in path.".to_string(),
+            ));
+        }
+    };
+
+    // Extract token from X-Sentry-Auth header first, then Authorization header
+    let token = extract_sentry_token(&req_data.headers);
+    let token = match token {
+        Some(t) => t,
+        None => {
+            return Err(AuthError::Unauthorized(
+                "Unauthorized Access. Missing sentry_key or Authorization header.".to_string(),
+            ));
+        }
+    };
+
+    validate_token_for_org(&token, org_id, "validator_sentry").await
+}
+
+/// Parse `sentry_key` from the `X-Sentry-Auth` header.
+///
+/// Header format: `Sentry sentry_version=7,sentry_key=abc123,sentry_client=...`
+///
+/// Falls back to `Authorization: Bearer {token}`.
+fn extract_sentry_token(headers: &axum::http::HeaderMap) -> Option<String> {
+    if let Some(val) = headers.get("x-sentry-auth") {
+        let val = val.to_str().unwrap_or("");
+        // Strip "Sentry " prefix and parse comma-separated key=value pairs
+        let val = val.strip_prefix("Sentry ").unwrap_or(val);
+        for part in val.split(',') {
+            let part = part.trim();
+            if let Some(key) = part.strip_prefix("sentry_key=") {
+                let key = key.trim().to_string();
+                if !key.is_empty() {
+                    return Some(key);
+                }
+            }
+        }
+    }
+
+    // Fallback: Authorization: Bearer {token}
+    if let Some(val) = headers.get("authorization") {
+        let val = val.to_str().unwrap_or("");
+        if let Some(token) = val.strip_prefix("Bearer ") {
+            let token = token.trim().to_string();
+            if !token.is_empty() {
+                return Some(token);
+            }
+        }
+    }
+
+    None
 }
 
 async fn oo_validator_internal(

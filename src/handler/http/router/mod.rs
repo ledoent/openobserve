@@ -51,7 +51,7 @@ use crate::{
     handler::http::{
         auth::validator::{
             RequestData, oo_validator, validator_aws, validator_gcp, validator_proxy_url,
-            validator_rum,
+            validator_rum, validator_sentry,
         },
         router::middlewares::blocked_orgs_middleware,
     },
@@ -171,6 +171,27 @@ pub async fn gcp_auth_middleware(mut request: Request, next: Next) -> Response {
     };
 
     match validator_gcp(&req_data).await {
+        Ok(result) => {
+            request.headers_mut().insert(
+                header::HeaderName::from_static("user_id"),
+                header::HeaderValue::from_str(&result.user_email)
+                    .unwrap_or_else(|_| header::HeaderValue::from_static("")),
+            );
+            next.run(request).await
+        }
+        Err(e) => e.into_response(),
+    }
+}
+
+/// Authentication middleware for Sentry SDK routes
+pub async fn sentry_auth_middleware(mut request: Request, next: Next) -> Response {
+    let req_data = RequestData {
+        uri: request.uri().clone(),
+        method: request.method().clone(),
+        headers: request.headers().clone(),
+    };
+
+    match validator_sentry(&req_data).await {
         Ok(result) => {
             request.headers_mut().insert(
                 header::HeaderName::from_static("user_id"),
@@ -825,7 +846,11 @@ pub fn service_routes() -> Router {
             .route("/{org_id}/service_streams/_analytics", get(service_streams::get_dimension_analytics))
             .route("/{org_id}/service_streams/_correlate", post(service_streams::correlate_streams))
             .route("/{org_id}/service_streams/config/identity", get(service_streams::get_identity_config).put(service_streams::save_identity_config))
-            .route("/{org_id}/service_streams/_reset", delete(service_streams::reset_services));
+            .route("/{org_id}/service_streams/_reset", delete(service_streams::reset_services))
+
+            // Sentry error issues management (authenticated API)
+            .route("/{org_id}/sentry/issues", get(sentry::issues::list))
+            .route("/{org_id}/sentry/issues/{id}", get(sentry::issues::get).patch(sentry::issues::update).delete(sentry::issues::delete));
     }
 
     #[cfg(feature = "cloud")]
@@ -964,10 +989,36 @@ pub fn other_service_routes() -> Router {
             decompression::preprocess_encoding_middleware,
         ));
 
+    // Sentry SDK routes - accepts envelope and store payloads from Sentry SDKs
+    // DSN format: https://{api_token}@{host}/sentry/{org_id}/{project_id}
+    let sentry_routes = Router::new()
+        .route(
+            "/{org_id}/api/{project_id}/envelope/",
+            post(sentry::ingest::envelope),
+        )
+        .route(
+            "/{org_id}/api/{project_id}/envelope",
+            post(sentry::ingest::envelope),
+        )
+        .route(
+            "/{org_id}/api/{project_id}/store/",
+            post(sentry::ingest::store),
+        )
+        .route(
+            "/{org_id}/api/{project_id}/store",
+            post(sentry::ingest::store),
+        )
+        .layer(middleware::from_fn(sentry_auth_middleware))
+        .layer(RequestDecompressionLayer::new())
+        .layer(middleware::from_fn(
+            decompression::preprocess_encoding_middleware,
+        ));
+
     Router::new()
         .nest("/aws", aws_routes)
         .nest("/gcp", gcp_routes)
         .nest("/rum", rum_routes)
+        .nest("/sentry", sentry_routes)
 }
 
 /// Create the full application router
