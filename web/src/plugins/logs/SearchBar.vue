@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     class="logs-search-bar-component"
     id="searchBarComponent"
   >
-    <div class="row tw:m-0! tw:p-[0.375rem]! tw:items-start!">
+    <div class="row tw:m-0! tw:p-[0.375rem]! tw:items-start!" :class="{ 'search-bar-mobile': isMobile }">
       <div class="float-right col flex tw:flex-wrap tw:items-center tw:gap-y-1">
         <div v-if="!shouldCollapseAllToMenu" class="button-group logs-visualize-toggle element-box-shadow">
           <div class="row">
@@ -1580,6 +1580,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </q-btn>
     </div>
 
+    <!-- Mobile: explicit Run Query button (logs mode has no visible run button, only Ctrl+Enter) -->
+    <q-btn
+      v-if="isMobile && searchObj.meta.logsVisualizeToggle === 'logs'"
+      icon="play_arrow"
+      :label="t('search.runQuery')"
+      @click="handleRunQueryFn()"
+      class="touch-target mobile-full-width o2-run-query-button o2-color-primary q-mx-xs q-mb-xs"
+      no-caps
+      dense
+      data-test="logs-search-bar-mobile-run-btn"
+    />
+
     <q-dialog ref="confirmDialog" v-model="confirmDialogVisible">
       <q-card>
         <q-card-section>
@@ -2309,6 +2321,7 @@ import { useStore } from "vuex";
 import { useQuasar, copyToClipboard, is, QTooltip } from "quasar";
 
 import DateTime from "@/components/DateTime.vue";
+import { useScreen } from "@/composables/useScreen";
 import ShareButton from "@/components/common/ShareButton.vue";
 import useLogs from "@/composables/useLogs";
 import useStreams from "@/composables/useStreams";
@@ -2760,6 +2773,8 @@ export default defineComponent({
 
     const hasInteractedWithAI = ref(false); // Track if user has used AI in non-NLP mode
     const isNaturalLanguageDetected = ref(false); // Track NL detection without switching modes
+
+    const { isMobile } = useScreen();
 
     // Track window width for responsive toolbar layout
     const windowWidth = ref(window.innerWidth);
@@ -5345,6 +5360,7 @@ export default defineComponent({
       shouldMoveSqlToggleToMenu,
       shouldMoveShareToMenu,
       shouldCollapseAllToMenu,
+      isMobile,
     };
   },
   computed: {
