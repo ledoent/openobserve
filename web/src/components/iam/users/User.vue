@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   <q-page class="q-pa-none">
     <div>
     <div class="card-container tw:mb-[0.625rem]">
-      <div class="tw:flex tw:flex-row tw:justify-between tw:items-center tw:px-4 tw:py-3 tw:h-[68px] tw:border-b-[1px]"
+      <div class="user-toolbar tw:flex tw:flex-row tw:justify-between tw:items-center tw:px-4 tw:py-3 tw:h-[68px] tw:border-b-[1px]"
     >
       <div
           class="q-table__title tw:font-[600]"
@@ -1253,7 +1253,7 @@ export default defineComponent({
 // Mobile: allow the toolbar to wrap and let col-6 actions stack full-width
 @media (max-width: 599px) {
   .q-page {
-    .tw\:h-\[68px\] {
+    .user-toolbar {
       height: auto !important;
       min-height: 52px;
       padding-top: 0.5rem !important;
