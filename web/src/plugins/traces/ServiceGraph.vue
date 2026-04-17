@@ -249,7 +249,7 @@
 
   <!-- Enhanced Settings Dialog -->
   <q-dialog v-model="showSettings">
-    <q-card style="min-width: 450px">
+    <q-card style="min-width: min(450px, 95vw)">
       <q-card-section>
         <div class="text-h6">Service Graph Settings</div>
       </q-card-section>
@@ -1553,7 +1553,7 @@ export default defineComponent({
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 14px 16px;
-  min-width: 260px;
+  min-width: min(260px, 95vw);
   color: #374151;
   font-size: 12px;
 }

@@ -1,0 +1,60 @@
+// Copyright 2026 OpenObserve Inc.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import { computed } from "vue";
+import { useScreen } from "./useScreen";
+
+/**
+ * Composable for making q-dialog/q-card pairs responsive on mobile.
+ *
+ * Usage:
+ *   const { dialogProps, cardStyle } = useResponsiveDialog({ desktopWidth: 600 });
+ *   <q-dialog v-bind="dialogProps"> <q-card :style="cardStyle"> ... </q-card> </q-dialog>
+ *
+ * Modes:
+ *   'constrained' (default) — card gets max-width: 95vw, dialog unchanged
+ *   'maximized' — dialog gets maximized prop on mobile
+ *   'bottom-sheet' — dialog gets position="bottom" on mobile
+ */
+export function useResponsiveDialog(options?: {
+  desktopWidth?: number;
+  mobileMode?: "maximized" | "bottom-sheet" | "constrained";
+}) {
+  const { isMobile } = useScreen();
+  const mode = options?.mobileMode ?? "constrained";
+
+  const dialogProps = computed(() => {
+    if (!isMobile.value) return {};
+    switch (mode) {
+      case "maximized":
+        return { maximized: true };
+      case "bottom-sheet":
+        return { position: "bottom" as const, fullWidth: true };
+      case "constrained":
+      default:
+        return {};
+    }
+  });
+
+  const cardStyle = computed(() => {
+    const w = options?.desktopWidth;
+    if (w) {
+      return `width: ${w}px; max-width: 95vw`;
+    }
+    return "max-width: 95vw";
+  });
+
+  return { dialogProps, cardStyle, isMobile };
+}

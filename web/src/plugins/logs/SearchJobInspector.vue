@@ -391,7 +391,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     <!-- Trace ID Dialog -->
     <q-dialog v-model="showTraceIdDialog">
-      <q-card style="min-width: 500px;">
+      <q-card style="min-width: min(500px, 95vw);">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">Full Trace ID</div>
           <q-space />
@@ -854,20 +854,20 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 150px;
+  min-width: min(150px, 95vw);
 }
 
 .duration-bar {
   height: 20px;
   border-radius: 3px;
-  min-width: 4px;
+  min-width: min(4px, 95vw);
   transition: width 0.3s ease;
 }
 
 .duration-text {
   font-size: 13px;
   white-space: nowrap;
-  min-width: 50px;
+  min-width: min(50px, 95vw);
 }
 
 .sql-query-container {

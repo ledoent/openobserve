@@ -329,7 +329,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       full-height
       maximized
     >
-      <q-card style="width: 600px; max-width: 80vw;">
+      <q-card style="width: 600px; max-width: 95vw;">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">URL Jobs for {{ selectedTableForUrlJobs?.name }}</div>
           <q-space />

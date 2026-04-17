@@ -88,7 +88,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </q-table>
     </div>
     <q-dialog v-model="extendTrialPrompt">
-      <q-card class="q-pa-sm" style="min-width: 450px;">
+      <q-card class="q-pa-sm" style="min-width: min(450px, 95vw);">
         <q-toolbar>
           <q-toolbar-title>
             <span class="text-weight-bold" :title="extendTrialDataRow.name">Extend Trial for {{ extendTrialDataRow.name }}</span>

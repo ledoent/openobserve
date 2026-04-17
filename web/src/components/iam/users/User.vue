@@ -230,7 +230,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </q-dialog>
 
     <q-dialog v-model="confirmDelete">
-      <q-card style="width: 240px">
+      <q-card style="width: 240px; max-width: 95vw">
         <q-card-section class="confirmBody">
           <div class="head">{{ t("user.confirmDeleteHead") }}</div>
           <div class="para">{{ t("user.confirmDeleteMsg") }}</div>
@@ -256,7 +256,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </q-dialog>
 
     <q-dialog v-model="confirmRevoke">
-      <q-card style="width: 400px">
+      <q-card style="width: 400px; max-width: 95vw">
         <q-card-section class="confirmBody">
           <div class="head">Revoke Invitation</div>
           <div class="para">Are you sure you want to revoke the invitation for {{ revokeInviteEmail }}?</div>
@@ -281,7 +281,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </q-dialog>
 
     <q-dialog v-model="confirmBulkDelete">
-      <q-card style="width: 280px">
+      <q-card style="width: 280px; max-width: 95vw">
         <q-card-section class="confirmBody">
           <div class="head">Delete Users</div>
           <div class="para">Are you sure you want to delete {{ selectedUsers.length }} user(s)?</div>

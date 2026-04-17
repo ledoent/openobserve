@@ -162,7 +162,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <!-- Field Mapping Dialog -->
       <q-dialog v-model="showFieldMappingDialog">
-        <q-card style="min-width: 480px; max-width: 600px" class="tw:rounded-xl">
+        <q-card style="min-width: min(480px, 95vw); max-width: min(600px, 95vw)" class="tw:rounded-xl">
           <q-card-section class="tw:flex tw:items-center tw:justify-between tw:pb-2">
             <div>
               <div class="text-h6">{{ t("settings.correlation.customizeFieldMappings") }}</div>
