@@ -196,8 +196,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <template #after>
           <div class="tw:w-full tw:h-full tw:pr-[0.625rem] tw:pb-[0.625rem]">
             <div class="tw:h-full card-container">
-              <!-- Alert List Table (shows all alert types including anomaly detection rows) -->
+              <!-- Mobile: card list (replaces multi-column table on <600px) -->
+              <div
+                v-if="isMobile"
+                class="mobile-alert-list"
+                data-test="alert-list-mobile"
+              >
+                <div
+                  v-if="!filteredResults?.length"
+                  class="mobile-alert-list__empty"
+                >
+                  <NoData />
+                </div>
+                <MobileAlertCard
+                  v-for="row in filteredResults"
+                  :key="row.alert_id || row.name"
+                  :row="row"
+                  @click="editAlert"
+                  @edit="editAlert"
+                  @toggle="toggleAlertState"
+                  @clone="duplicateAlert"
+                  @move="moveAlertToAnotherFolder"
+                  @trigger="triggerAlert"
+                  @delete="(row) => showDeleteDialogFn({ row })"
+                />
+              </div>
+              <!-- Desktop: multi-column Alert List Table -->
               <q-table
+                v-else
                 v-model:selected="selectedAlerts"
                 :selected-rows-label="getSelectedString"
                 selection="multiple"
@@ -975,6 +1001,7 @@ import {
   outlinedMoreVert,
 } from "@quasar/extras/material-icons-outlined";
 import FolderList from "../common/sidebar/FolderList.vue";
+import MobileAlertCard from "./MobileAlertCard.vue";
 import { useScreen } from "@/composables/useScreen";
 
 import MoveAcrossFolders from "../common/sidebar/MoveAcrossFolders.vue";
@@ -1001,6 +1028,7 @@ export default defineComponent({
     ImportAlert,
     DedupSummaryCards,
     FolderList,
+    MobileAlertCard,
     MoveAcrossFolders,
     AppTabs,
     SelectFolderDropDown,
@@ -3260,6 +3288,19 @@ export default defineComponent({
 
 // Mobile: collapse the folders splitter pane and hide its separator.
 // Folders are accessed via the mobile header trigger + side-sheet dialog.
+.mobile-alert-list {
+  padding: 8px 8px 80px 8px;
+  overflow-y: auto;
+  height: calc(100vh - var(--navbar-height, 56px) - 200px);
+
+  &__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+  }
+}
+
 .alert-list-splitter-mobile {
   :deep(.q-splitter__before) {
     display: none !important;
