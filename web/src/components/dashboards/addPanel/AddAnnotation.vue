@@ -39,7 +39,7 @@
             map-options
             @update:model-value="updateSelectedPanels"
             :display-value="displayValue"
-            style="min-width: min(150px, 95vw)"
+            style="min-width: 150px"
             dense
             label="Select Panels"
             input-debounce="0"

@@ -133,7 +133,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       @update:model-value="(val) => !val && closeChat()"
       position="bottom"
       full-width
-      maximized
+      transition-show="slide-up"
+      transition-hide="slide-down"
+      aria-label="AI Chat"
     >
       <q-card style="height: 85vh; border-radius: 12px 12px 0 0">
         <q-card-section class="row items-center q-pb-none">
@@ -203,6 +205,7 @@ import {
 import {
   ref,
   defineComponent,
+  defineAsyncComponent,
   KeepAlive,
   computed,
   onMounted,
@@ -252,7 +255,7 @@ import organizations from "@/services/organizations";
 import useStreams from "@/composables/useStreams";
 import { openobserveRum } from "@openobserve/browser-rum";
 import useSearchWebSocket from "@/composables/useSearchWebSocket";
-import O2AIChat from "@/components/O2AIChat.vue";
+const O2AIChat = defineAsyncComponent(() => import("@/components/O2AIChat.vue"));
 import WebinarBanner from "@/components/WebinarBanner.vue";
 import useRoutePrefetch from "@/composables/useRoutePrefetch";
 import { useScreen } from "@/composables/useScreen";

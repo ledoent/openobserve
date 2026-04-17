@@ -369,6 +369,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         >
           <template v-slot="{ item: row, index }">
             <MobileLogCard
+              :key="'log_' + index"
               :row="row"
               :index="index"
               @click="openLogDetails"

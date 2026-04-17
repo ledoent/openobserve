@@ -215,6 +215,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     v-model="showMobilePicker"
     position="bottom"
     full-width
+    transition-show="slide-up"
+    transition-hide="slide-down"
+    aria-label="Select date and time"
   >
     <q-card style="max-height: 80vh; border-radius: 12px 12px 0 0">
       <div class="mobile-sheet-handle" />

@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     class="mobile-log-card"
     :class="severityClass"
     @click="$emit('click', row, index)"
+    @keydown.enter="$emit('click', row, index)"
+    @keydown.space.prevent="$emit('click', row, index)"
     role="button"
     tabindex="0"
     :aria-label="`Log entry ${index + 1}`"
@@ -55,11 +57,22 @@ export default defineComponent({
         props.row._timestamp || props.row["@timestamp"] || props.row.timestamp;
       if (!ts) return "";
       try {
-        const date = new Date(
-          typeof ts === "number" && ts > 1e15 ? ts / 1000 : ts,
-        );
+        // Handle nanosecond, microsecond, and millisecond timestamps
+        let msTs = ts;
+        if (typeof ts === "number") {
+          if (ts > 1e18) msTs = ts / 1e6;
+          else if (ts > 1e15) msTs = ts / 1000;
+        }
+        const date = new Date(msTs);
         const now = Date.now();
         const diff = now - date.getTime();
+        if (diff < 0)
+          return date.toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
         if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
         if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
         if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
