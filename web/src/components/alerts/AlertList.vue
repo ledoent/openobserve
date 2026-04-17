@@ -3271,4 +3271,30 @@ export default defineComponent({
     width: 100% !important;
   }
 }
+
+// Mobile: let the header toolbar grow instead of clipping to its
+// fixed desktop height. The toolbar wraps to two rows on small
+// screens; without this override the second row renders under the
+// table's sticky header.
+@media (max-width: 599px) {
+  [data-test="alert-list-page"] {
+    .tw\:h-\[68px\] {
+      height: auto !important;
+      min-height: 52px;
+      padding-top: 0.5rem !important;
+      padding-bottom: 0.5rem !important;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .alert-list-table {
+      height: auto !important;
+      min-height: calc(100vh - 200px);
+    }
+    // Alerts page inner chrome is noisy on mobile — tighten paddings.
+    .card-container {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+  }
+}
 </style>
