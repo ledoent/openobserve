@@ -1,6 +1,6 @@
 <template>
   <q-dialog v-model="isOpen" persistent>
-    <q-card style="min-width: 700px">
+    <q-card style="min-width: min(700px, 95vw)">
       <q-card-section class="q-pa-md">
         <div class="text-h6">{{ isEditMode ? "Edit" : "Add" }} Annotation</div>
       </q-card-section>
@@ -39,7 +39,7 @@
             map-options
             @update:model-value="updateSelectedPanels"
             :display-value="displayValue"
-            style="min-width: 150px"
+            style="min-width: min(150px, 95vw)"
             dense
             label="Select Panels"
             input-debounce="0"

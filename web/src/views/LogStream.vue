@@ -263,7 +263,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </q-dialog>
 
     <q-dialog v-model="confirmDelete">
-      <q-card style="width: 420px">
+      <q-card style="width: 420px; max-width: 95vw">
         <q-card-section class="confirmBodyLogStream">
           <div class="head">{{ t("logStream.confirmDeleteHead") }}</div>
           <div class="para">{{ t("logStream.confirmDeleteMsg") }}</div>
@@ -292,7 +292,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </q-card>
     </q-dialog>
     <q-dialog v-model="confirmBatchDelete">
-      <q-card style="width: 420px">
+      <q-card style="width: 420px; max-width: 95vw">
         <q-card-section class="confirmBodyLogStream">
           <div class="head">{{ t("logStream.confirmBatchDeleteHead") }}</div>
           <div class="para">{{ t("logStream.confirmBatchDeleteMsg") }}</div>
