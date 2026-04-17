@@ -70,7 +70,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               :placeholder="t(`alerts.searcHistory`) || 'Select or search alert...'"
               data-test="alert-history-search-select"
               class="o2-search-input q-mr-sm"
-              style="min-width: min(250px, 95vw)"
+              style="min-width: 250px"
               clearable
               @clear="clearSearch"
             >
