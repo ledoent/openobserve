@@ -65,4 +65,48 @@ describe("MobileAlertCard", () => {
     const w = mountCard({ ...baseRow, stream_name: undefined, type: undefined });
     expect(w.find(".mobile-alert-card__subtitle").exists()).toBe(false);
   });
+
+  it("formats numeric period as human-readable minutes/hours", () => {
+    const short = mountCard({ ...baseRow, period: 5 });
+    expect(short.find(".mobile-alert-card__meta").text()).toContain("5 Mins");
+    const exact = mountCard({ ...baseRow, period: 120 });
+    expect(exact.find(".mobile-alert-card__meta").text()).toContain("2 Hours");
+    const mixed = mountCard({ ...baseRow, period: 90 });
+    expect(mixed.find(".mobile-alert-card__meta").text()).toContain(
+      "1 Hours 30 Mins",
+    );
+  });
+
+  it("formats frequency based on frequency_type", () => {
+    const mins = mountCard({ ...baseRow, frequency: 10, frequency_type: "minutes" });
+    expect(mins.find(".mobile-alert-card__meta").text()).toContain("10 Mins");
+    const cron = mountCard({
+      ...baseRow,
+      frequency: "*/5 * * * *",
+      frequency_type: "cron",
+    });
+    const metaText = cron.find(".mobile-alert-card__meta").text();
+    expect(metaText).toContain("*/5 * * * *");
+    expect(metaText).not.toContain("Mins");
+  });
+
+  it("emits each menu action with the row", async () => {
+    const w = mountCard(baseRow);
+    const vm = w.vm as any;
+    const actions = ["toggle", "edit", "clone", "move", "trigger", "delete"];
+    for (const action of actions) {
+      vm.$emit(action, baseRow);
+    }
+    for (const action of actions) {
+      expect(w.emitted(action)).toBeTruthy();
+      expect(w.emitted(action)![0]).toEqual([baseRow]);
+    }
+  });
+
+  it("does not propagate card click from the overflow button", async () => {
+    const w = mountCard(baseRow);
+    const more = w.find(".mobile-alert-card__more");
+    await more.trigger("click");
+    expect(w.emitted("click")).toBeFalsy();
+  });
 });
