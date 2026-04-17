@@ -153,7 +153,7 @@
 
     <!-- Operation Selector Dialog -->
     <q-dialog v-model="showOperationSelector">
-      <q-card style="min-width: 500px">
+      <q-card style="min-width: min(500px, 95vw)">
         <q-card-section class="tw:pt-[0.625rem]! tw:pb-[0.625rem]!">
           <div class="tw:text-[1.2rem]">Add Operation</div>
         </q-card-section>
@@ -352,7 +352,7 @@ defineExpose({
 .layout-name {
   font-size: 14px;
   white-space: nowrap;
-  min-width: 86px;
+  min-width: min(86px, 95vw);
   display: flex;
   align-items: center;
 }

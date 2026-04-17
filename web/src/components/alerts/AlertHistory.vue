@@ -70,7 +70,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               :placeholder="t(`alerts.searcHistory`) || 'Select or search alert...'"
               data-test="alert-history-search-select"
               class="o2-search-input q-mr-sm"
-              style="min-width: 250px"
+              style="min-width: min(250px, 95vw)"
               clearable
               @clear="clearSearch"
             >
@@ -541,7 +541,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     <!-- Error Dialog -->
     <q-dialog v-model="errorDialog">
-      <q-card style="min-width: 500px">
+      <q-card style="min-width: min(500px, 95vw)">
         <q-card-section class="pipeline-error-header row items-center q-pb-none">
           <div class="tw:flex-1">
             <div class="tw:flex tw:items-center tw:gap-3 tw:mb-1">
