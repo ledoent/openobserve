@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 <template>
   <div class="card-container tw:w-[100vw] tw:h-[100vh]">
-    <div style="max-width: 400px; padding-top: 100px" class="q-mx-auto q-pa-md">
+    <div style="max-width: min(400px, 90vw); padding-top: clamp(2rem, 8vh, 100px)" class="q-mx-auto q-pa-md">
       <div
         class="flex justify-center text-center"
         v-if="
@@ -94,11 +94,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <div v-if="showSSO" class="flex justify-center">
           <q-btn
             data-test="sso-login-btn"
-            class="text-bold no-border"
+            class="text-bold no-border full-width"
             padding="sm lg"
             color="primary"
             no-caps
-            style="width: 400px"
             @click="loginWithSSo"
           >
             <div

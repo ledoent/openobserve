@@ -14,7 +14,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 <template>
-  <q-page class="tw:px-[0.625rem] q-pt-xs home-page" :class="store.state.isAiChatEnabled ? 'ai-enabled-home-view q-pb-sm' : ''">
+  <q-page class="tw:px-[0.625rem] q-pt-xs home-page mobile-content-clearance" :class="store.state.isAiChatEnabled ? 'ai-enabled-home-view q-pb-sm' : ''">
 
     <!-- Tab bar (drag to reorder) — shown when multiple tabs exist -->
     <div
@@ -52,7 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     <!-- Usage tab (existing content) -->
     <div v-if="activeHomeTab === 'usage'" class="tw:h-full tw:overflow-y-auto">
-    <div v-if="!no_data_ingest && !isLoadingSummary" class="tw:w-full tw:px-[0.625rem] tw:py-[0.625rem] card-container card-container--col" :class="store.state.isAiChatEnabled ? 'tw:h-[calc(100% - 40px)]' : 'tw:h-full'">
+    <div v-if="!no_data_ingest && !isLoadingSummary" class="tw:w-full tw:px-[0.625rem] tw:py-[0.625rem] tw:overflow-y-auto card-container card-container--col" :class="store.state.isAiChatEnabled ? 'tw:h-[calc(100% - 40px)]' : 'tw:h-full'">
         <!-- 1st section -->
          <div class="banners-wrapper">
             <div>
@@ -366,7 +366,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 </div>
               </div>
             </div>
-            <div class="custom-first-chart tw:my-auto xl:tw:min-h-[200px] tw:h-[calc(100vh-500px)]  md:tw:h-[calc(100vh-500px)] lg:tw:h-[calc(100vh-550px)] xl:tw:h-[calc(100vh-645px)] tw:w-full"  >
+            <div class="custom-first-chart tw:my-auto xl:tw:min-h-[200px] tw:h-[200px] md:tw:h-[calc(100vh-500px)] lg:tw:h-[calc(100vh-550px)] xl:tw:h-[calc(100vh-645px)] tw:w-full"  >
               <CustomChartRenderer
                 :key="alertsPanelDataKey"
                 :data="alertsPanelData"
@@ -414,7 +414,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 </div>
               </div>
             </div>
-            <div class="custom-second-chart tw:my-auto xl:tw:min-h-[200px] tw:h-[calc(100vh-500px)]  md:tw:h-[calc(100vh-500px)] lg:tw:h-[calc(100vh-550px)] xl:tw:h-[calc(100vh-645px)]"  >
+            <div class="custom-second-chart tw:my-auto xl:tw:min-h-[200px] tw:h-[200px] md:tw:h-[calc(100vh-500px)] lg:tw:h-[calc(100vh-550px)] xl:tw:h-[calc(100vh-645px)]"  >
               <CustomChartRenderer
                 :key="pipelinesPanelDataKey"
                 :data="pipelinesPanelData"

@@ -442,6 +442,7 @@ import { useQuasar } from "quasar";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useScreen } from "@/composables/useScreen";
 
 import segment from "@/services/segment_analytics";
 import config from "@/aws-exports";
@@ -788,7 +789,14 @@ export default defineComponent({
       handleBeforeMount();
     });
 
+    const { isMobile } = useScreen();
+
     onMounted(() => {
+      // Auto-collapse fields sidebar on mobile for usable results area
+      if (isMobile.value && searchObj.meta.showFields) {
+        searchObj.meta.showFields = false;
+      }
+
       if (
         router.currentRoute.value.query.hasOwnProperty("action") &&
         router.currentRoute.value.query.action == "history"
