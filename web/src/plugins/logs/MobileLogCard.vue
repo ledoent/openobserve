@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     class="mobile-log-card"
     :class="severityClass"
     @click="$emit('click', row, index)"
+    @keydown.enter="$emit('click', row, index)"
+    @keydown.space.prevent="$emit('click', row, index)"
     role="button"
     tabindex="0"
     :aria-label="`Log entry ${index + 1}`"

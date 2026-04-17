@@ -52,7 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </button>
 
     <!-- More sheet -->
-    <q-dialog v-model="showMoreSheet" position="bottom" full-width>
+    <q-dialog v-model="showMoreSheet" position="bottom" full-width transition-show="slide-up" transition-hide="slide-down" aria-label="More navigation options">
       <q-card class="mobile-more-sheet">
         <div class="mobile-more-sheet__handle" />
         <q-list>

@@ -2221,3 +2221,11 @@ body {
     padding-bottom: calc(var(--o2-mobile-nav-height) + 0.5rem) !important;
   }
 }
+
+// Mobile focus-visible styling for keyboard navigation
+@media (max-width: 599px) {
+  :focus-visible {
+    outline: 2px solid var(--o2-primary-btn-bg);
+    outline-offset: 2px;
+  }
+}
