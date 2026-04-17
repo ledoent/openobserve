@@ -299,8 +299,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <template v-slot:after>
           <div class="tw:w-full tw:h-full tw:pr-[0.625rem] tw:pb-[0.625rem]">
             <div class="tw:h-full card-container">
-          <!-- add dashboard table -->
+          <!-- Mobile: card list replaces 6-column table on <600px -->
+          <div
+            v-if="isMobile"
+            class="mobile-dashboard-list"
+            data-test="dashboard-list-mobile"
+          >
+            <div v-if="loading" class="mobile-dashboard-list__loading">
+              <q-spinner color="primary" size="32px" />
+            </div>
+            <div
+              v-else-if="!dashboards?.length"
+              class="mobile-dashboard-list__empty"
+            >
+              <NoData />
+            </div>
+            <MobileDashboardCard
+              v-for="row in dashboards"
+              :key="row.id"
+              :row="row"
+              @click="(r) => routeToViewD(r)"
+              @open="(r) => routeToViewD(r)"
+              @clone="(r) => duplicateDashboard(r.id, r.folder_id)"
+              @move="(r) => showMoveDashboardPanel(r)"
+              @delete="(r) => showDeleteDialogFn({ row: r })"
+            />
+          </div>
+          <!-- Desktop: full data table -->
           <q-table
+            v-else
             ref="qTable"
             :rows="dashboards"
             :columns="columns"
@@ -671,6 +698,7 @@ import { useQuasar, date, debounce } from "quasar";
 import { useI18n } from "vue-i18n";
 
 import dashboardService from "../../services/dashboards";
+import MobileDashboardCard from "@/components/dashboards/MobileDashboardCard.vue";
 import { useScreen } from "@/composables/useScreen";
 import QTablePagination from "../../components/shared/grid/Pagination.vue";
 import NoData from "../../components/shared/grid/NoData.vue";
@@ -722,6 +750,7 @@ export default defineComponent({
     NoData,
     ConfirmDialog,
     AddFolder,
+    MobileDashboardCard,
     MoveDashboardToAnotherFolder,
   },
   setup() {
@@ -1712,6 +1741,20 @@ export default defineComponent({
 
 // Mobile: collapse the folders splitter pane. Folders are accessed via
 // the mobile header trigger + side-sheet dialog.
+.mobile-dashboard-list {
+  padding: 8px;
+  overflow-y: auto;
+  height: calc(100vh - var(--navbar-height, 56px) - 180px);
+
+  &__loading,
+  &__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+  }
+}
+
 .dashboards-splitter-mobile {
   :deep(.q-splitter__before) {
     display: none !important;
