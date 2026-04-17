@@ -59,7 +59,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </div>
       </div>
       <div class="tw:w-full tw:h-full tw:pb-[0.625rem]">
-        <div class="card-container full-width o2-quasar-table o2-row-md o2-quasar-table-header-sticky tw:h-[calc(100vh-128px)]">
+        <!-- Mobile: card list -->
+        <div
+          v-if="isMobile"
+          class="mobile-report-list"
+          data-test="report-list-mobile"
+        >
+          <div
+            v-if="!visibleRows.length"
+            class="mobile-report-list__empty"
+          >
+            <NoData />
+          </div>
+          <MobileReportCard
+            v-for="row in visibleRows"
+            :key="row.name"
+            :row="row"
+            @click="editReport"
+            @edit="editReport"
+            @toggle="toggleReportState"
+            @delete="confirmDeleteReport"
+          />
+        </div>
+        <div v-else class="card-container full-width o2-quasar-table o2-row-md o2-quasar-table-header-sticky tw:h-[calc(100vh-128px)]">
           <q-table
             data-test="report-list-table"
             ref="reportListTableRef"
@@ -270,7 +292,11 @@ import { useI18n } from "vue-i18n";
 import reports from "@/services/reports";
 import { cloneDeep } from "lodash-es";
 import AppTabs from "@/components/common/AppTabs.vue";
+import MobileReportCard from "./MobileReportCard.vue";
+import { useScreen } from "@/composables/useScreen";
 import { useReo } from "@/services/reodotdev_analytics";
+
+const { isMobile } = useScreen();
 
 const reportsTableRows: Ref<any[]> = ref([]);
 
