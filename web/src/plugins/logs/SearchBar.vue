@@ -5769,6 +5769,14 @@ export default defineComponent({
   /* subtle default glow */
   // box-shadow: 0 0 8px color-mix(in srgb, var(--o2-primary-btn-bg), transparent 60%);
 }
+
+@media (max-width: 599px) {
+  .o2-run-query-button.mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
 .o2-color-primary {
   background-color: var(--o2-primary-btn-bg);
   color: var(--o2-primary-btn-text);

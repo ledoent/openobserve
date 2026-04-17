@@ -1440,6 +1440,12 @@
   .query-editor-container {
     min-height: 80px !important;
   }
+
+  // Hide desktop-only field splitter toggle on mobile — mobile uses FAB + slide-over
+  .logs-splitter-icon-collapse,
+  .logs-splitter-icon-expand {
+    display: none !important;
+  }
 }
 
 
