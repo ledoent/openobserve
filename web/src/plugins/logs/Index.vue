@@ -332,8 +332,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               v-model="showMobileFields"
               position="left"
               full-height
-              transition-show="slide-left"
-              transition-hide="slide-right"
+              transition-show="slide-right"
+              transition-hide="slide-left"
               aria-label="Filter fields"
             >
               <q-card

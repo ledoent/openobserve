@@ -88,4 +88,36 @@ describe("MobileLogCard", () => {
       "fallback value here",
     );
   });
+
+  it("handles future timestamps gracefully", () => {
+    const futureTs = (Date.now() + 60000) * 1000; // 1 minute in the future (microseconds)
+    const wrapper = mount(MobileLogCard, {
+      props: { row: { ...baseRow, _timestamp: futureTs }, index: 0 },
+    });
+
+    // Should show formatted date instead of negative relative time
+    const text = wrapper.find(".mobile-log-card__timestamp").text();
+    expect(text).not.toContain("-");
+    expect(text).not.toContain("ago");
+  });
+
+  it("handles nanosecond timestamps", () => {
+    const nsTs = Date.now() * 1e6; // nanoseconds
+    const wrapper = mount(MobileLogCard, {
+      props: { row: { ...baseRow, _timestamp: nsTs }, index: 0 },
+    });
+
+    expect(wrapper.find(".mobile-log-card__timestamp").text()).toContain("ago");
+  });
+
+  it("emits click on Enter keydown", async () => {
+    const wrapper = mount(MobileLogCard, {
+      props: { row: baseRow, index: 0 },
+    });
+
+    await wrapper.trigger("keydown.enter");
+
+    expect(wrapper.emitted("click")).toBeTruthy();
+    expect(wrapper.emitted("click")![0]).toEqual([baseRow, 0]);
+  });
 });
