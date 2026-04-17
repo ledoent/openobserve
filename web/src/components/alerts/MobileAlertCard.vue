@@ -32,6 +32,7 @@ Licensed under AGPL v3. -->
         class="mobile-alert-card__more"
         aria-label="More actions"
         @click.stop
+        @keydown.stop
       >
         <q-menu>
           <q-list dense style="min-width: 180px">
@@ -84,11 +85,11 @@ Licensed under AGPL v3. -->
       <span v-if="row.owner" class="mobile-alert-card__meta-item">
         <q-icon name="person" size="12px" />{{ row.owner }}
       </span>
-      <span v-if="row.period" class="mobile-alert-card__meta-item">
-        <q-icon name="history" size="12px" />{{ row.period }}
+      <span v-if="formattedPeriod" class="mobile-alert-card__meta-item">
+        <q-icon name="history" size="12px" />{{ formattedPeriod }}
       </span>
-      <span v-if="row.frequency" class="mobile-alert-card__meta-item">
-        <q-icon name="schedule" size="12px" />{{ row.frequency }}
+      <span v-if="formattedFrequency" class="mobile-alert-card__meta-item">
+        <q-icon name="schedule" size="12px" />{{ formattedFrequency }}
       </span>
       <span
         class="mobile-alert-card__state"
@@ -121,7 +122,26 @@ export default defineComponent({
       if (props.row.type) parts.push(String(props.row.type));
       return parts.join(" · ");
     });
-    return { moreIcon, subtitle };
+    // Mirror the desktop q-table period/frequency column formatters so the
+    // same numeric row values render as human-readable strings on mobile.
+    const formattedPeriod = computed(() => {
+      const v = props.row.period;
+      if (v === undefined || v === null || v === "") return "";
+      const n = Number(v);
+      if (Number.isNaN(n)) return String(v);
+      if (n >= 60) {
+        const hours = Math.floor(n / 60);
+        const mins = n % 60;
+        return mins === 0 ? `${hours} Hours` : `${hours} Hours ${mins} Mins`;
+      }
+      return `${n} Mins`;
+    });
+    const formattedFrequency = computed(() => {
+      const v = props.row.frequency;
+      if (v === undefined || v === null || v === "") return "";
+      return props.row.frequency_type === "cron" ? String(v) : `${v} Mins`;
+    });
+    return { moreIcon, subtitle, formattedPeriod, formattedFrequency };
   },
 });
 </script>

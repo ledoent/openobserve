@@ -31,6 +31,7 @@ Licensed under AGPL v3. -->
         class="mobile-dashboard-card__more"
         aria-label="More actions"
         @click.stop
+        @keydown.stop
       >
         <q-menu>
           <q-list dense style="min-width: 180px">
