@@ -117,7 +117,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 no-caps
                 flat
                 icon="folder"
-                :label="activeFolderId"
+                :label="activeFolderName"
                 @click="openMobileFolders"
                 data-test="dashboard-mobile-folders-btn"
                 aria-label="Open folders"
@@ -628,9 +628,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <q-dialog
       v-if="isMobile"
       v-model="showMobileFolders"
-      position="left"
-      transition-show="slide-right"
-      transition-hide="slide-left"
+      v-bind="folderSheetDialogProps"
       aria-label="Folders"
     >
       <q-card style="width: 85vw; max-width: 360px; height: 100%">
@@ -700,6 +698,7 @@ import { useI18n } from "vue-i18n";
 import dashboardService from "../../services/dashboards";
 import MobileDashboardCard from "@/components/dashboards/MobileDashboardCard.vue";
 import { useScreen } from "@/composables/useScreen";
+import { useResponsiveDialog } from "@/composables/useResponsiveDialog";
 import QTablePagination from "../../components/shared/grid/Pagination.vue";
 import NoData from "../../components/shared/grid/NoData.vue";
 import { useRoute, useRouter } from "vue-router";
@@ -770,7 +769,17 @@ export default defineComponent({
     const splitterModel = ref(200);
     const activeFolderId = ref(null);
     const { isMobile } = useScreen();
+    const { dialogProps: folderSheetDialogProps } = useResponsiveDialog({
+      mobileMode: "slide-left",
+    });
     const showMobileFolders = ref(false);
+    const activeFolderName = computed(() => {
+      const folders = store.state.organizationData?.folders || [];
+      const match = folders.find(
+        (f: any) => f.folderId === activeFolderId.value,
+      );
+      return match?.name || activeFolderId.value || "";
+    });
     const effectiveSplitterModel = computed({
       get: () => (isMobile.value ? 0 : splitterModel.value),
       set: (v: number) => {
@@ -1566,6 +1575,8 @@ export default defineComponent({
       activeFolderId,
       isMobile,
       showMobileFolders,
+      folderSheetDialogProps,
+      activeFolderName,
       effectiveSplitterModel,
       openMobileFolders,
       addFolder,
@@ -1741,10 +1752,12 @@ export default defineComponent({
 
 // Mobile: collapse the folders splitter pane. Folders are accessed via
 // the mobile header trigger + side-sheet dialog.
+// Fills the bounded splitter after-slot. Avoids magic viewport math that
+// would break when the header toolbar wraps to 2+ rows on narrow screens.
 .mobile-dashboard-list {
+  height: 100%;
   padding: 8px;
   overflow-y: auto;
-  height: calc(100vh - var(--navbar-height, 56px) - 180px);
 
   &__loading,
   &__empty {

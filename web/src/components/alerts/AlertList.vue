@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     >
       <div class="card-container">
         <div
-          class="flex justify-between full-width tw:py-3 tw:mb-[0.625rem] tw:px-4 tw:h-[68px] items-center"
+          class="alert-list-toolbar flex justify-between full-width tw:py-3 tw:mb-[0.625rem] tw:px-4 tw:h-[68px] items-center"
         >
           <div class="tw:flex tw:items-center tw:gap-4">
             <div
@@ -116,7 +116,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             no-caps
             flat
             icon="folder"
-            :label="activeFolderId"
+            :label="activeFolderName"
             @click="openMobileFolders"
             data-test="alert-list-mobile-folders-btn"
             aria-label="Open folders"
@@ -795,9 +795,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <q-dialog
       v-if="isMobile"
       v-model="showMobileFolders"
-      position="left"
-      transition-show="slide-right"
-      transition-hide="slide-left"
+      v-bind="folderSheetDialogProps"
       aria-label="Folders"
     >
       <q-card style="width: 85vw; max-width: 360px; height: 100%">
@@ -1003,6 +1001,7 @@ import {
 import FolderList from "../common/sidebar/FolderList.vue";
 import MobileAlertCard from "./MobileAlertCard.vue";
 import { useScreen } from "@/composables/useScreen";
+import { useResponsiveDialog } from "@/composables/useResponsiveDialog";
 
 import MoveAcrossFolders from "../common/sidebar/MoveAcrossFolders.vue";
 import { toRaw } from "vue";
@@ -1064,6 +1063,9 @@ export default defineComponent({
     const confirmDelete = ref<boolean>(false);
     const splitterModel = ref(200);
     const { isMobile } = useScreen();
+    const { dialogProps: folderSheetDialogProps } = useResponsiveDialog({
+      mobileMode: "slide-left",
+    });
     const showMobileFolders = ref(false);
     const effectiveSplitterModel = computed({
       get: () => (isMobile.value ? 0 : splitterModel.value),
@@ -1075,10 +1077,21 @@ export default defineComponent({
       showMobileFolders.value = true;
     };
     const onMobileFolderSelect = (folderId: string) => {
+      // FolderList emits update:activeFolderId on mount, which would
+      // immediately close the dialog right after it opened. Only close on a
+      // real user-driven selection (folderId changed from the current value).
       const changed = folderId !== activeFolderId.value;
       updateActiveFolderId(folderId);
       if (changed) showMobileFolders.value = false;
     };
+    const activeFolderName = computed(() => {
+      const folders =
+        store.state.organizationData?.foldersByType?.["alerts"] || [];
+      const match = folders.find(
+        (f: any) => f.folderId === activeFolderId.value,
+      );
+      return match?.name || activeFolderId.value || "";
+    });
     const showForm = ref(false);
     const indexOptions = ref([]);
     const schemaList = ref([]);
@@ -3059,6 +3072,8 @@ export default defineComponent({
       effectiveSplitterModel,
       openMobileFolders,
       onMobileFolderSelect,
+      activeFolderName,
+      folderSheetDialogProps,
       outlinedPause,
       outlinedPlayArrow,
       toggleAlertState,
@@ -3288,10 +3303,13 @@ export default defineComponent({
 
 // Mobile: collapse the folders splitter pane and hide its separator.
 // Folders are accessed via the mobile header trigger + side-sheet dialog.
+// The mobile list fills its parent (splitter after-slot, height already
+// bounded by .alert-list-table). Using 100% here avoids a magic viewport
+// subtraction that would break when the header toolbar wraps to 2+ rows.
 .mobile-alert-list {
+  height: 100%;
   padding: 8px 8px 80px 8px;
   overflow-y: auto;
-  height: calc(100vh - var(--navbar-height, 56px) - 200px);
 
   &__empty {
     display: flex;
@@ -3319,7 +3337,7 @@ export default defineComponent({
 // table's sticky header.
 @media (max-width: 599px) {
   [data-test="alert-list-page"] {
-    .tw\:h-\[68px\] {
+    .alert-list-toolbar {
       height: auto !important;
       min-height: 52px;
       padding-top: 0.5rem !important;
