@@ -233,7 +233,7 @@ function selectLog(log: any) {
     }
 
     strong {
-      min-width: min(150px, 95vw);
+      min-width: 150px;
       color: var(--q-text-secondary, #757575);
     }
   }

@@ -352,6 +352,9 @@ size="16px" class="q-mr-xs" />
           v-model="showOrgDialog"
           position="bottom"
           full-width
+          transition-show="slide-up"
+          transition-hide="slide-down"
+          aria-label="Select organization"
         >
           <q-card style="max-height: 80vh; border-radius: 12px 12px 0 0">
             <q-card-section class="row items-center q-pb-none">

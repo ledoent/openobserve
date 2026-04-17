@@ -1553,7 +1553,7 @@ export default defineComponent({
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 14px 16px;
-  min-width: min(260px, 95vw);
+  min-width: 260px;
   color: #374151;
   font-size: 12px;
 }
