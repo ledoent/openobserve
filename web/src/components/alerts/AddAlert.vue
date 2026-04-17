@@ -337,7 +337,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <!-- Footer: Cancel / Save (left column, separate card) -->
       <div
-        class="card-container tw:flex tw:items-center tw:justify-end tw:px-3 tw:py-2.5 tw:shrink-0 tw:gap-2"
+        class="card-container add-alert-footer tw:flex tw:items-center tw:justify-end tw:px-3 tw:py-2.5 tw:shrink-0 tw:gap-2"
       >
         <q-btn
           data-test="add-alert-cancel-btn"
@@ -600,6 +600,19 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+// Mobile: pin the Cancel/Save footer to the viewport bottom so the
+// primary action stays reachable without scrolling long forms. Safe-area
+// inset keeps the buttons above the home indicator on iOS.
+@media (max-width: 599px) {
+  .add-alert-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    padding-bottom: calc(0.625rem + env(safe-area-inset-bottom, 0px)) !important;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
 .active-tab {
   color: var(--q-primary);
   border-bottom: 2px solid var(--q-primary);
