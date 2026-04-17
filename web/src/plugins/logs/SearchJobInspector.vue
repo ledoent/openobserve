@@ -854,20 +854,20 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: min(150px, 95vw);
+  min-width: 150px;
 }
 
 .duration-bar {
   height: 20px;
   border-radius: 3px;
-  min-width: min(4px, 95vw);
+  min-width: 4px;
   transition: width 0.3s ease;
 }
 
 .duration-text {
   font-size: 13px;
   white-space: nowrap;
-  min-width: min(50px, 95vw);
+  min-width: 50px;
 }
 
 .sql-query-container {

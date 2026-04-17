@@ -133,7 +133,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       @update:model-value="(val) => !val && closeChat()"
       position="bottom"
       full-width
-      maximized
       transition-show="slide-up"
       transition-hide="slide-down"
       aria-label="AI Chat"

@@ -352,7 +352,7 @@ defineExpose({
 .layout-name {
   font-size: 14px;
   white-space: nowrap;
-  min-width: min(86px, 95vw);
+  min-width: 86px;
   display: flex;
   align-items: center;
 }
