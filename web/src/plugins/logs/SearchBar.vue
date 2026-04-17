@@ -1580,18 +1580,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </q-btn>
     </div>
 
-    <!-- Mobile: explicit Run Query button (logs mode has no visible run button, only Ctrl+Enter) -->
-    <q-btn
-      v-if="isMobile && searchObj.meta.logsVisualizeToggle === 'logs'"
-      icon="play_arrow"
-      :label="t('search.runQuery')"
-      @click="handleRunQueryFn()"
-      class="touch-target mobile-full-width o2-run-query-button o2-color-primary q-mx-xs q-mb-xs"
-      no-caps
-      dense
-      data-test="logs-search-bar-mobile-run-btn"
-    />
-
     <q-dialog ref="confirmDialog" v-model="confirmDialogVisible">
       <q-card>
         <q-card-section>
