@@ -60,7 +60,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               searchObj.meta.logsVisualizeToggle == 'patterns'
             "
           >
-            <!-- Note: Splitter max-height to be dynamically calculated with JS -->
+            <!-- Splitter with fields sidebar (sidebar auto-collapsed on mobile) -->
             <q-splitter
               v-model="searchObj.config.splitterModel"
               :limits="searchObj.config.splitterLimit"
@@ -310,6 +310,48 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 </div>
               </template>
             </q-splitter>
+
+            <!-- Mobile: FAB to open fields sidebar + slide-over dialog -->
+            <q-btn
+              v-if="isMobile"
+              icon="filter_list"
+              round
+              color="primary"
+              class="touch-target"
+              style="
+                position: fixed;
+                bottom: calc(var(--o2-mobile-nav-height) + 12px);
+                left: 12px;
+                z-index: 1999;
+              "
+              @click="showMobileFields = true"
+              aria-label="Open fields filter"
+            />
+            <q-dialog
+              v-if="isMobile"
+              v-model="showMobileFields"
+              position="left"
+              full-height
+            >
+              <q-card
+                style="width: 85vw; max-width: 320px"
+                class="full-height"
+              >
+                <q-card-section class="row items-center q-pb-none">
+                  <div class="text-subtitle1 text-weight-medium">Fields</div>
+                  <q-space />
+                  <q-btn icon="close" flat round dense v-close-popup />
+                </q-card-section>
+                <q-card-section class="q-pt-sm" style="height: calc(100% - 52px); overflow: auto">
+                  <index-list
+                    class="card-container"
+                    @setInterestingFieldInSQLQuery="
+                      setInterestingFieldInSQLQuery
+                    "
+                  />
+                </q-card-section>
+              </q-card>
+            </q-dialog>
           </div>
           <div
             v-show="searchObj.meta.logsVisualizeToggle == 'visualize'"
@@ -776,6 +818,7 @@ export default defineComponent({
     });
 
     const { isMobile } = useScreen();
+    const showMobileFields = ref(false);
 
     onMounted(() => {
       // Auto-collapse fields sidebar on mobile for usable results area
@@ -2994,6 +3037,8 @@ export default defineComponent({
       onBuildInitialized,
       selectedDateTime,
       isFirstBuildToggle,
+      isMobile,
+      showMobileFields,
     };
   },
   computed: {

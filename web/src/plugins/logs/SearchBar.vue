@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     class="logs-search-bar-component"
     id="searchBarComponent"
   >
-    <div class="row tw:m-0! tw:p-[0.375rem]! tw:items-start!">
+    <div class="row tw:m-0! tw:p-[0.375rem]! tw:items-start!" :class="{ 'search-bar-mobile': isMobile }">
       <div class="float-right col flex tw:flex-wrap tw:items-center tw:gap-y-1">
         <div v-if="!shouldCollapseAllToMenu" class="button-group logs-visualize-toggle element-box-shadow">
           <div class="row">
@@ -2309,6 +2309,7 @@ import { useStore } from "vuex";
 import { useQuasar, copyToClipboard, is, QTooltip } from "quasar";
 
 import DateTime from "@/components/DateTime.vue";
+import { useScreen } from "@/composables/useScreen";
 import ShareButton from "@/components/common/ShareButton.vue";
 import useLogs from "@/composables/useLogs";
 import useStreams from "@/composables/useStreams";
@@ -2763,6 +2764,8 @@ export default defineComponent({
 
     const hasInteractedWithAI = ref(false); // Track if user has used AI in non-NLP mode
     const isNaturalLanguageDetected = ref(false); // Track NL detection without switching modes
+
+    const { isMobile } = useScreen();
 
     // Track window width for responsive toolbar layout
     const windowWidth = ref(window.innerWidth);
@@ -5360,6 +5363,7 @@ export default defineComponent({
       shouldMoveSqlToggleToMenu,
       shouldMoveShareToMenu,
       shouldCollapseAllToMenu,
+      isMobile,
     };
   },
   computed: {
@@ -5768,6 +5772,14 @@ export default defineComponent({
   /* subtle default glow */
   // box-shadow: 0 0 8px color-mix(in srgb, var(--o2-primary-btn-bg), transparent 60%);
 }
+
+@media (max-width: 599px) {
+  .o2-run-query-button.mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
 .o2-color-primary {
   background-color: var(--o2-primary-btn-bg);
   color: var(--o2-primary-btn-text);
