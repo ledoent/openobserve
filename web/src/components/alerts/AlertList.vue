@@ -109,6 +109,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </q-tooltip>
             </div>
           </div>
+          <!-- Mobile: folder trigger -->
+          <q-btn
+            v-if="isMobile"
+            class="q-ml-sm o2-secondary-button tw:h-[36px]"
+            no-caps
+            flat
+            icon="folder"
+            :label="activeFolderId"
+            @click="openMobileFolders"
+            data-test="alert-list-mobile-folders-btn"
+            aria-label="Open folders"
+          />
           <!-- Import button -->
           <q-btn
             :class="[
@@ -161,14 +173,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     >
       <!-- Alerts View (with folders) -->
       <q-splitter
-        v-model="splitterModel"
+        v-model="effectiveSplitterModel"
         unit="px"
-        :limits="[200, 500]"
+        :limits="isMobile ? [0, 0] : [200, 500]"
+        :class="{ 'alert-list-splitter-mobile': isMobile }"
         style="height: calc(100vh - 118px)"
         data-test="alert-list-splitter"
       >
         <template #before>
-          <div class="tw:w-full tw:h-full tw:pl-[0.625rem] tw:pb-[0.625rem]">
+          <div
+            v-if="!isMobile"
+            class="tw:w-full tw:h-full tw:pl-[0.625rem] tw:pb-[0.625rem]"
+          >
             <div class="tw:h-full">
               <FolderList
                 type="alerts"
@@ -749,6 +765,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       />
     </template>
 
+    <!-- Mobile: folders side-sheet -->
+    <q-dialog
+      v-if="isMobile"
+      v-model="showMobileFolders"
+      position="left"
+      transition-show="slide-right"
+      transition-hide="slide-left"
+      aria-label="Folders"
+    >
+      <q-card style="width: 85vw; max-width: 360px; height: 100%">
+        <div class="tw:h-full tw:p-[0.625rem]">
+          <FolderList
+            type="alerts"
+            @update:activeFolderId="onMobileFolderSelect"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
+
     <ConfirmDialog
       title="Delete Alert"
       message="Are you sure you want to delete this alert?"
@@ -940,6 +975,7 @@ import {
   outlinedMoreVert,
 } from "@quasar/extras/material-icons-outlined";
 import FolderList from "../common/sidebar/FolderList.vue";
+import { useScreen } from "@/composables/useScreen";
 
 import MoveAcrossFolders from "../common/sidebar/MoveAcrossFolders.vue";
 import { toRaw } from "vue";
@@ -999,6 +1035,22 @@ export default defineComponent({
     const isUpdated: any = ref(false);
     const confirmDelete = ref<boolean>(false);
     const splitterModel = ref(200);
+    const { isMobile } = useScreen();
+    const showMobileFolders = ref(false);
+    const effectiveSplitterModel = computed({
+      get: () => (isMobile.value ? 0 : splitterModel.value),
+      set: (v: number) => {
+        if (!isMobile.value) splitterModel.value = v;
+      },
+    });
+    const openMobileFolders = () => {
+      showMobileFolders.value = true;
+    };
+    const onMobileFolderSelect = (folderId: string) => {
+      const changed = folderId !== activeFolderId.value;
+      updateActiveFolderId(folderId);
+      if (changed) showMobileFolders.value = false;
+    };
     const showForm = ref(false);
     const indexOptions = ref([]);
     const schemaList = ref([]);
@@ -2974,6 +3026,11 @@ export default defineComponent({
       verifyOrganizationStatus,
       folders,
       splitterModel,
+      isMobile,
+      showMobileFolders,
+      effectiveSplitterModel,
+      openMobileFolders,
+      onMobileFolderSelect,
       outlinedPause,
       outlinedPlayArrow,
       toggleAlertState,
@@ -3198,6 +3255,20 @@ export default defineComponent({
   }
   :deep(.q-toggle__label) {
     margin-top: 2px !important;
+  }
+}
+
+// Mobile: collapse the folders splitter pane and hide its separator.
+// Folders are accessed via the mobile header trigger + side-sheet dialog.
+.alert-list-splitter-mobile {
+  :deep(.q-splitter__before) {
+    display: none !important;
+  }
+  :deep(.q-splitter__separator) {
+    display: none !important;
+  }
+  :deep(.q-splitter__after) {
+    width: 100% !important;
   }
 }
 </style>
