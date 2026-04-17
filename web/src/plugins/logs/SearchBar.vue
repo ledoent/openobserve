@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   >
     <div class="row tw:m-0! tw:p-[0.375rem]! tw:items-start!">
       <div class="float-right col flex tw:flex-wrap tw:items-center tw:gap-y-1">
-        <div class="button-group logs-visualize-toggle element-box-shadow">
+        <div v-if="!shouldCollapseAllToMenu" class="button-group logs-visualize-toggle element-box-shadow">
           <div class="row">
             <div>
               <q-btn
@@ -2778,6 +2778,8 @@ export default defineComponent({
       () => windowWidth.value <= 1280,
     );
     const shouldMoveShareToMenu = computed(() => windowWidth.value <= 1100);
+    // <= 768px: collapse mode toggles + all remaining toolbar items
+    const shouldCollapseAllToMenu = computed(() => windowWidth.value <= 768);
     const vrlEditorNlpMode = ref(false); // Track VRL editor's AI mode
 
     const confirmUpdate = ref(false);
@@ -5342,6 +5344,7 @@ export default defineComponent({
       shouldMoveSavedViewToMenu,
       shouldMoveSqlToggleToMenu,
       shouldMoveShareToMenu,
+      shouldCollapseAllToMenu,
     };
   },
   computed: {
