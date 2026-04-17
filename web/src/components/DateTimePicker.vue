@@ -206,7 +206,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </q-menu>
   </q-btn>
 
-  <!-- Mobile: bottom sheet dialog -->
+  <!-- Mobile: bottom sheet dialog
+       NOTE: Inner tab panels are duplicated from the desktop q-menu above.
+       This is intentional — the q-menu and q-dialog have different wrapper
+       structures that prevent sharing a single template fragment. -->
   <q-dialog
     v-if="isMobile"
     v-model="showMobilePicker"
@@ -214,16 +217,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     full-width
   >
     <q-card style="max-height: 80vh; border-radius: 12px 12px 0 0">
-      <div
-        style="
-          width: 36px;
-          height: 4px;
-          background: var(--o2-border-color);
-          border-radius: 2px;
-          margin: 10px auto;
-          opacity: 0.6;
-        "
-      />
+      <div class="mobile-sheet-handle" />
       <q-card-section class="q-pt-none date-time-dialog" style="width: 100%">
         <div class="flex justify-evenly q-py-sm">
           <q-btn
@@ -821,5 +815,14 @@ export default defineComponent({
       color: $dark-page;
     }
   }
+}
+
+.mobile-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--o2-border-color);
+  border-radius: 2px;
+  margin: 10px auto;
+  opacity: 0.6;
 }
 </style>
