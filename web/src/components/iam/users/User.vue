@@ -1249,4 +1249,25 @@ export default defineComponent({
   font-size: 11px;
   color: $light-text;
 }
+
+// Mobile: allow the toolbar to wrap and let col-6 actions stack full-width
+@media (max-width: 599px) {
+  .q-page {
+    .tw\:h-\[68px\] {
+      height: auto !important;
+      min-height: 52px;
+      padding-top: 0.5rem !important;
+      padding-bottom: 0.5rem !important;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .col-6 {
+      flex: 0 0 100%;
+      max-width: 100%;
+      > .q-btn {
+        width: 100%;
+      }
+    }
+  }
+}
 </style>

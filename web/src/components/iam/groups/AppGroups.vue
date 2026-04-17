@@ -126,7 +126,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </div>
     <q-dialog v-model="showAddGroup" position="right" full-height maximized>
       <AddGroup
-        style="width: 30vw"
+        class="app-groups-add-panel"
         :org_identifier="store.state.selectedOrganization.identifier"
         @cancel:hideform="hideAddGroup"
         @added:group="setupGroups"
@@ -388,6 +388,17 @@ const hasVisibleRows = computed(() => visibleRows.value.length > 0)
   .q-table--dark .thead-sticky,
   .q-table--dark .tfoot-sticky {
     background: transparent !important;
+  }
+}
+
+// AddGroup side-panel: 30vw on desktop, full-width on mobile so the
+// form doesn't get squeezed into a 30% sliver of a 375px screen.
+.app-groups-add-panel {
+  width: 30vw;
+}
+@media (max-width: 599px) {
+  .app-groups-add-panel {
+    width: 100vw !important;
   }
 }
 </style>
