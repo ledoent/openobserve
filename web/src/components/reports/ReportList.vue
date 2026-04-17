@@ -462,13 +462,15 @@ const columns: any = ref<QTableProps["columns"]>([
 ]);
 
 // ── Load reports ──────────────────────────────────────────────────────────────
-const loadReports = async (folderId: string) => {
+const loadReports = async (folderId: string, silent = false) => {
   isLoadingReports.value = true;
-  const dismiss = q.notify({
-    spinner: true,
-    message: "Please wait while fetching reports...",
-    timeout: 2000,
-  });
+  const dismiss = silent
+    ? () => {}
+    : q.notify({
+        spinner: true,
+        message: "Please wait while fetching reports...",
+        timeout: 2000,
+      });
 
   try {
     const folder = searchAcrossFolders.value ? undefined : folderId;
@@ -500,6 +502,14 @@ const loadReports = async (folderId: string) => {
   } finally {
     isLoadingReports.value = false;
     dismiss();
+  }
+};
+
+const onMobileRefresh = async (ack: () => void) => {
+  try {
+    await loadReports(activeFolderId.value, true);
+  } finally {
+    ack();
   }
 };
 

@@ -104,6 +104,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </template>
               <template #after>
                 <div class="tw:pr-[0.625rem] tw:pb-[0.625rem] tw:h-full">
+                  <PullToRefreshWrapper
+                    class="tw:h-full tw:w-full"
+                    @refresh="onMobileLogsRefresh"
+                  >
                   <div
                     class="card-container tw:h-full tw:w-full relative-position"
                   >
@@ -307,6 +311,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       </h5>
                     </div>
                   </div>
+                  </PullToRefreshWrapper>
                 </div>
               </template>
             </q-splitter>
@@ -530,12 +535,14 @@ import useStreams from "@/composables/useStreams";
 import { contextRegistry } from "@/composables/contextProviders";
 import { createLogsContextProvider } from "@/composables/contextProviders/logsContextProvider";
 import IndexList from "@/plugins/logs/IndexList.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
 
 export default defineComponent({
   name: "PageSearch",
   components: {
     SearchBar,
     IndexList,
+    PullToRefreshWrapper,
     SearchResult: defineAsyncComponent(
       () => import("@/plugins/logs/SearchResult.vue"),
     ),
@@ -558,6 +565,30 @@ export default defineComponent({
   methods: {
     setHistogramDate(date: any) {
       this.searchBarRef.dateTimeRef.setCustomDate("absolute", date);
+    },
+    // Mobile pull-to-refresh: re-run the current query once without
+    // disturbing the live-mode polling timer. We deliberately call
+    // getQueryData/handleRunQueryFn directly rather than refreshData(), so
+    // a manual pull never resets refreshInterval or the polling cadence.
+    // Ack() runs in a finally block so the wrapper spinner always dismisses,
+    // including the loading short-circuit and the no-stream / no-mode no-ops.
+    async onMobileLogsRefresh(ack: () => void) {
+      try {
+        if (this.searchObj.loading) return;
+        const streamsSelected =
+          this.searchObj.data?.stream?.selectedStream?.length > 0;
+        const mode = this.searchObj.meta?.logsVisualizeToggle;
+        if (mode === "logs" && streamsSelected && this.searchObj.meta?.searchApplied) {
+          await this.getQueryData(false);
+          this.refreshHistogramChart();
+          return;
+        }
+        if (mode && mode !== "logs" && streamsSelected) {
+          await this.handleRunQueryFn(false);
+        }
+      } finally {
+        ack();
+      }
     },
     searchData() {
       if (this.searchObj.loading == false) {
