@@ -115,20 +115,33 @@ export default defineComponent({
       if (raw === "enrichment_tables") return "enrichment";
       return "logs";
     });
+    // Backend returns storage strings like "0.0014781951904296875 MB" for
+    // tiny streams. Desktop q-table truncates visually via column width; on
+    // mobile the whole float wraps and looks broken, so round the numeric
+    // prefix to 2 decimals.
+    const trimSize = (raw: unknown): string => {
+      const s = String(raw ?? "").trim();
+      const m = s.match(/^(-?\d+(?:\.\d+)?)(\s*\S.*)?$/);
+      if (!m) return s;
+      const n = Number(m[1]);
+      if (!Number.isFinite(n)) return s;
+      const rounded = Math.abs(n) < 0.01 && n !== 0 ? n.toFixed(3) : n.toFixed(2);
+      return `${parseFloat(rounded)}${m[2] ?? ""}`;
+    };
     const metaLine = computed(() => {
       const bits: string[] = [];
       if (props.showDocCount && props.row.doc_num && props.row.doc_num !== "--") {
         bits.push(`${props.row.doc_num} docs`);
       }
       if (props.row.storage_size && props.row.storage_size !== "-- MB") {
-        bits.push(String(props.row.storage_size));
+        bits.push(trimSize(props.row.storage_size));
       }
       if (
         props.row.compressed_size &&
         props.row.compressed_size !== "-- MB" &&
         props.row.compressed_size !== "0 MB"
       ) {
-        bits.push(`${props.row.compressed_size} compressed`);
+        bits.push(`${trimSize(props.row.compressed_size)} compressed`);
       }
       return bits.join(" · ");
     });

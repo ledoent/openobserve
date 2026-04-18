@@ -68,6 +68,13 @@ describe("MobileAlertCard", () => {
     expect(w.find(".mobile-alert-card__subtitle").exists()).toBe(false);
   });
 
+  it("skips em-dash / double-dash placeholders in subtitle", () => {
+    const emDash = mountCard({ ...baseRow, stream_name: "—" });
+    expect(emDash.find(".mobile-alert-card__subtitle").text()).toBe("scheduled");
+    const dashes = mountCard({ ...baseRow, stream_name: "--", type: "--" });
+    expect(dashes.find(".mobile-alert-card__subtitle").exists()).toBe(false);
+  });
+
   it("formats numeric period as human-readable minutes/hours", () => {
     const short = mountCard({ ...baseRow, period: 5 });
     expect(short.find(".mobile-alert-card__meta").text()).toContain("5 Mins");

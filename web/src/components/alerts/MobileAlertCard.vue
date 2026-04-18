@@ -135,10 +135,16 @@ export default defineComponent({
   setup(props) {
     const moreIcon = outlinedMoreVert;
     const { vibrate } = useHaptics();
+    // Skip backend placeholder values ("--", "—") so the subtitle doesn't
+    // render `— · sql` when stream_name isn't set.
+    const isPresent = (v: unknown) => {
+      const s = String(v ?? "").trim();
+      return s !== "" && s !== "--" && s !== "—";
+    };
     const subtitle = computed(() => {
       const parts: string[] = [];
-      if (props.row.stream_name) parts.push(String(props.row.stream_name));
-      if (props.row.type) parts.push(String(props.row.type));
+      if (isPresent(props.row.stream_name)) parts.push(String(props.row.stream_name));
+      if (isPresent(props.row.type)) parts.push(String(props.row.type));
       return parts.join(" · ");
     });
     // Mirror the desktop q-table period/frequency column formatters so the
