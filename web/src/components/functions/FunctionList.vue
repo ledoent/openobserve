@@ -48,7 +48,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               />
           </div>
         </div>
-        <div class="tw:w-full tw:h-full tw:pb-[0.625rem]">
+        <div
+          v-if="useCardLayout"
+          class="card-container mobile-function-list-wrap"
+        >
+          <PullToRefreshWrapper
+            class="mobile-function-list-scroll"
+            @refresh="onMobileRefresh"
+          >
+            <div
+              v-if="visibleRows.length === 0"
+              class="mobile-function-list-empty"
+            >
+              <span>{{ t("function.noDataMsg") || "No functions yet" }}</span>
+            </div>
+            <div v-else class="mobile-function-list">
+              <MobileFunctionCard
+                v-for="row in visibleRows"
+                :key="row.name"
+                :row="row"
+                @click="(r: any) => showAddUpdateFn({ row: r })"
+                @edit="(r: any) => showAddUpdateFn({ row: r })"
+                @pipelines="(r: any) => getAssociatedPipelines({ row: r })"
+                @delete="(r: any) => showDeleteDialogFn({ row: r })"
+              />
+            </div>
+          </PullToRefreshWrapper>
+        </div>
+        <div v-else class="tw:w-full tw:h-full tw:pb-[0.625rem]">
           <div class="card-container tw:h-[calc(100vh-127px)]">
             <q-table
               ref="qTable"
@@ -271,6 +298,8 @@ import QTablePagination from "../shared/grid/Pagination.vue";
 import jsTransformService from "../../services/jstransform";
 import NoData from "../shared/grid/NoData.vue";
 import ConfirmDialog from "../ConfirmDialog.vue";
+import PullToRefreshWrapper from "../shared/PullToRefreshWrapper.vue";
+import MobileFunctionCard from "./MobileFunctionCard.vue";
 import segment from "../../services/segment_analytics";
 import { getImageURL, verifyOrganizationStatus } from "../../utils/zincutils";
 import {
@@ -287,6 +316,8 @@ export default defineComponent({
     AddFunction: defineAsyncComponent(() => import("./AddFunction.vue")),
     NoData,
     ConfirmDialog,
+    PullToRefreshWrapper,
+    MobileFunctionCard,
   },
   emits: [
     "updated:fields",
@@ -358,7 +389,7 @@ export default defineComponent({
         message: "Please wait while loading functions...",
       });
 
-      jsTransformService
+      return jsTransformService
         .list(
           1,
           100000,
@@ -636,6 +667,17 @@ export default defineComponent({
     });
     const hasVisibleRows = computed(() => visibleRows.value.length > 0);
 
+    // Use cards (and bottom nav) up to the md breakpoint (<1024 px) so tablets
+    // also escape the desktop q-table layout.
+    const useCardLayout = computed(() => $q.screen.lt.md);
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await getJSTransforms();
+      } finally {
+        ack();
+      }
+    };
+
     // Watch visibleRows to sync resultTotal with search filter
     watch(visibleRows, (newVisibleRows) => {
       resultTotal.value = newVisibleRows.length;
@@ -781,6 +823,8 @@ export default defineComponent({
       bulkDeleteFunctions,
       confirmBulkDelete,
       selectedFunctions,
+      useCardLayout,
+      onMobileRefresh,
     };
   },
   computed: {
@@ -807,6 +851,31 @@ export default defineComponent({
 });
 </script>
 
+<style scoped lang="scss">
+@media (max-width: 1023px) {
+  .mobile-function-list-wrap {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-function-list-scroll {
+    height: calc(100vh - var(--navbar-height) - 92px - var(--o2-mobile-nav-height, 0px));
+  }
+
+  .mobile-function-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px;
+  }
+
+  .mobile-function-list-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--o2-text-secondary);
+  }
+}
+</style>
 <style lang="scss">
 .pipeline-list-container {
   max-height: 200px; /* Adjust based on item height to fit 5 items */
