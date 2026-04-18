@@ -95,8 +95,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </div>
     </div>
 
-    <!-- Splitter: folder list left, table right -->
+    <!-- Mobile: card list with pull-to-refresh (folder splitter hidden) -->
+    <PullToRefreshWrapper
+      v-if="isMobile"
+      class="mobile-report-list"
+      data-test="report-list-mobile"
+      @refresh="onMobileRefresh"
+    >
+      <div v-if="!visibleRows.length" class="mobile-report-list__empty">
+        <NoData />
+      </div>
+      <MobileReportCard
+        v-for="row in visibleRows"
+        :key="row.report_id || row.name"
+        :row="row"
+        @click="editReport"
+        @edit="editReport"
+        @toggle="toggleReportState"
+        @delete="confirmDeleteReport"
+      />
+    </PullToRefreshWrapper>
+
+    <!-- Desktop splitter: folder list left, table right -->
     <div
+      v-else
       class="full-width report-list-table"
       style="height: calc(100vh - 118px)"
     >
@@ -393,12 +415,17 @@ import { useI18n } from "vue-i18n";
 import reports from "@/services/reports";
 import { cloneDeep } from "lodash-es";
 import AppTabs from "@/components/common/AppTabs.vue";
+import MobileReportCard from "./MobileReportCard.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import { useScreen } from "@/composables/useScreen";
 import { useReo } from "@/services/reodotdev_analytics";
 import { getFoldersListByType } from "@/utils/commons";
 
 const MoveAcrossFolders = defineAsyncComponent(
   () => import("@/components/common/sidebar/MoveAcrossFolders.vue"),
 );
+
+const { isMobile } = useScreen();
 
 const { t } = useI18n();
 const router = useRouter();

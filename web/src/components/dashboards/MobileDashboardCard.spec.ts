@@ -52,4 +52,29 @@ describe("MobileDashboardCard", () => {
     await w.trigger("keydown.enter");
     expect(w.emitted("click")).toBeTruthy();
   });
+
+  it("emits each menu action with the row", async () => {
+    const w = mountCard(baseRow);
+    const vm = w.vm as any;
+    const actions = ["open", "clone", "move", "delete"];
+    for (const action of actions) {
+      vm.$emit(action, baseRow);
+    }
+    for (const action of actions) {
+      expect(w.emitted(action)).toBeTruthy();
+      expect(w.emitted(action)![0]).toEqual([baseRow]);
+    }
+  });
+
+  it("does not propagate card click from the overflow button", async () => {
+    const w = mountCard(baseRow);
+    const more = w.find(".mobile-dashboard-card__more");
+    await more.trigger("click");
+    expect(w.emitted("click")).toBeFalsy();
+  });
+
+  it("omits meta row items when owner and created are absent", () => {
+    const w = mountCard({ ...baseRow, owner: "", created: "" });
+    expect(w.findAll(".mobile-dashboard-card__meta-item")).toHaveLength(0);
+  });
 });
