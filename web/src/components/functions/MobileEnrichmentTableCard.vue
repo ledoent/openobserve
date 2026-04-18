@@ -171,6 +171,8 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+@import "@/styles/mobile-cards";
+
 .mobile-enrichment-card-slide {
   margin-bottom: 8px;
   border-radius: 8px;
@@ -178,7 +180,7 @@ export default defineComponent({
 }
 
 .mobile-enrichment-card {
-  position: relative;
+  @include mobile-card-accent("enrich-accent");
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
@@ -188,18 +190,6 @@ export default defineComponent({
   transition:
     background 150ms ease,
     transform 120ms ease;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--enrich-accent, var(--o2-primary, #5960b2));
-    opacity: 0.85;
-  }
 
   &[data-tone="file"],
   &[data-tone="url"] { --enrich-accent: var(--o2-primary, #5960b2); }

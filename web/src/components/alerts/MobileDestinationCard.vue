@@ -138,6 +138,8 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+@import "@/styles/mobile-cards";
+
 .mobile-destination-card-slide {
   margin-bottom: 8px;
   border-radius: 8px;
@@ -145,7 +147,7 @@ export default defineComponent({
 }
 
 .mobile-destination-card {
-  position: relative;
+  @include mobile-card-accent("dest-accent");
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
@@ -155,19 +157,10 @@ export default defineComponent({
   transition:
     background 150ms ease,
     transform 120ms ease;
-  overflow: hidden;
 
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--dest-accent, var(--o2-primary, #5960b2));
-    opacity: 0.85;
-  }
-
+  // Unknown destination types (beyond http/email/action) fall through to the
+  // mixin's default `--o2-primary` — matches the "http" look, which is fine
+  // as a conservative default for unrecognized rows.
   &[data-tone="http"] { --dest-accent: var(--o2-primary, #5960b2); }
   &[data-tone="email"] { --dest-accent: #0d8a6a; }
   &[data-tone="action"] { --dest-accent: #b26a00; }

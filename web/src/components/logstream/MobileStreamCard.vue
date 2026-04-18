@@ -151,6 +151,8 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+@import "@/styles/mobile-cards";
+
 .mobile-stream-card-slide {
   margin-bottom: 8px;
   border-radius: 8px;
@@ -158,7 +160,7 @@ export default defineComponent({
 }
 
 .mobile-stream-card {
-  position: relative;
+  @include mobile-card-accent("stream-accent");
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
@@ -168,20 +170,9 @@ export default defineComponent({
   transition:
     background 150ms ease,
     transform 120ms ease;
-  overflow: hidden;
 
   // Left-edge accent stripe keyed to stream type — reinforces the badge
   // color so a list of mixed-type streams is scannable at a glance.
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--stream-accent, var(--o2-primary, #5960b2));
-    opacity: 0.85;
-  }
 
   &[data-tone="logs"] { --stream-accent: var(--o2-primary, #5960b2); }
   &[data-tone="metrics"] { --stream-accent: #0d8a6a; }

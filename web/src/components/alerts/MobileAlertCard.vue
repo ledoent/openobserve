@@ -178,6 +178,8 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+@import "@/styles/mobile-cards";
+
 .mobile-alert-card-slide {
   margin-bottom: 8px;
   border-radius: 8px;
@@ -185,7 +187,7 @@ export default defineComponent({
 }
 
 .mobile-alert-card {
-  position: relative;
+  @include mobile-card-accent("alert-accent");
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
@@ -195,17 +197,8 @@ export default defineComponent({
   transition:
     background 150ms ease,
     transform 120ms ease;
-  overflow: hidden;
 
   &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--alert-accent, var(--o2-text-muted, #818594));
-    opacity: 0.85;
     transition: background 150ms ease;
   }
 
