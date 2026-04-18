@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { Quasar } from "quasar";
 import MobileReportCard from "./MobileReportCard.vue";
@@ -36,7 +36,9 @@ describe("MobileReportCard", () => {
   it("shows Paused state and applies disabled modifier when row.enabled is false", () => {
     const w = mountCard({ ...baseRow, enabled: false });
     expect(w.find(".mobile-report-card__state").text()).toBe("Paused");
-    expect(w.classes()).toContain("mobile-report-card--disabled");
+    expect(w.find(".mobile-report-card").classes()).toContain(
+      "mobile-report-card--disabled",
+    );
   });
 
   it("renders description when present", () => {
@@ -75,14 +77,14 @@ describe("MobileReportCard", () => {
 
   it("emits click with row on tap", async () => {
     const w = mountCard(baseRow);
-    await w.trigger("click");
+    await w.find(".mobile-report-card").trigger("click");
     expect(w.emitted("click")).toBeTruthy();
     expect(w.emitted("click")![0]).toEqual([baseRow]);
   });
 
   it("emits click on Enter keydown", async () => {
     const w = mountCard(baseRow);
-    await w.trigger("keydown.enter");
+    await w.find(".mobile-report-card").trigger("keydown.enter");
     expect(w.emitted("click")).toBeTruthy();
   });
 
@@ -104,5 +106,23 @@ describe("MobileReportCard", () => {
     const more = w.find(".mobile-report-card__more");
     await more.trigger("click");
     expect(w.emitted("click")).toBeFalsy();
+  });
+
+  it("emits toggle when swipe-left handler is invoked", () => {
+    const w = mountCard(baseRow);
+    const reset = vi.fn();
+    (w.vm as any).onSwipeLeft({ reset });
+    expect(w.emitted("toggle")).toBeTruthy();
+    expect(w.emitted("toggle")![0]).toEqual([baseRow]);
+    expect(reset).toHaveBeenCalled();
+  });
+
+  it("emits delete when swipe-right handler is invoked", () => {
+    const w = mountCard(baseRow);
+    const reset = vi.fn();
+    (w.vm as any).onSwipeRight({ reset });
+    expect(w.emitted("delete")).toBeTruthy();
+    expect(w.emitted("delete")![0]).toEqual([baseRow]);
+    expect(reset).toHaveBeenCalled();
   });
 });

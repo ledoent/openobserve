@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { Quasar } from "quasar";
 import MobileDashboardCard from "./MobileDashboardCard.vue";
@@ -42,14 +42,14 @@ describe("MobileDashboardCard", () => {
 
   it("emits click with row on tap", async () => {
     const w = mountCard(baseRow);
-    await w.trigger("click");
+    await w.find(".mobile-dashboard-card").trigger("click");
     expect(w.emitted("click")).toBeTruthy();
     expect(w.emitted("click")![0]).toEqual([baseRow]);
   });
 
   it("emits click on Enter keydown", async () => {
     const w = mountCard(baseRow);
-    await w.trigger("keydown.enter");
+    await w.find(".mobile-dashboard-card").trigger("keydown.enter");
     expect(w.emitted("click")).toBeTruthy();
   });
 
@@ -76,5 +76,14 @@ describe("MobileDashboardCard", () => {
   it("omits meta row items when owner and created are absent", () => {
     const w = mountCard({ ...baseRow, owner: "", created: "" });
     expect(w.findAll(".mobile-dashboard-card__meta-item")).toHaveLength(0);
+  });
+
+  it("emits delete when swipe-right handler is invoked", () => {
+    const w = mountCard(baseRow);
+    const reset = vi.fn();
+    (w.vm as any).onSwipeRight({ reset });
+    expect(w.emitted("delete")).toBeTruthy();
+    expect(w.emitted("delete")![0]).toEqual([baseRow]);
+    expect(reset).toHaveBeenCalled();
   });
 });

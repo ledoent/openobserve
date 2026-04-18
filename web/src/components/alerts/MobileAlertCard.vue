@@ -2,9 +2,25 @@
 Licensed under AGPL v3. -->
 
 <template>
+  <q-slide-item
+    class="mobile-alert-card-slide"
+    left-color="green"
+    right-color="red"
+    @left="onSwipeLeft"
+    @right="onSwipeRight"
+  >
+    <template #left>
+      <q-icon :name="row.enabled ? 'pause' : 'play_arrow'" />
+      <span class="q-ml-xs">{{ row.enabled ? "Pause" : "Start" }}</span>
+    </template>
+    <template #right>
+      <span class="q-mr-xs">Delete</span>
+      <q-icon name="delete" />
+    </template>
   <div
     class="mobile-alert-card"
     :class="{ 'mobile-alert-card--disabled': !row.enabled }"
+    :data-tone="row.enabled ? 'on' : 'off'"
     @click="$emit('click', row)"
     @keydown.enter="$emit('click', row)"
     @keydown.space.prevent="$emit('click', row)"
@@ -99,11 +115,13 @@ Licensed under AGPL v3. -->
       </span>
     </div>
   </div>
+  </q-slide-item>
 </template>
 
 <script lang="ts">
 import { defineComponent, computed, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobileAlertCard",
@@ -116,10 +134,17 @@ export default defineComponent({
   emits: ["click", "toggle", "edit", "clone", "move", "trigger", "delete"],
   setup(props) {
     const moreIcon = outlinedMoreVert;
+    const { vibrate } = useHaptics();
+    // Skip backend placeholder values ("--", "—") so the subtitle doesn't
+    // render `— · sql` when stream_name isn't set.
+    const isPresent = (v: unknown) => {
+      const s = String(v ?? "").trim();
+      return s !== "" && s !== "--" && s !== "—";
+    };
     const subtitle = computed(() => {
       const parts: string[] = [];
-      if (props.row.stream_name) parts.push(String(props.row.stream_name));
-      if (props.row.type) parts.push(String(props.row.type));
+      if (isPresent(props.row.stream_name)) parts.push(String(props.row.stream_name));
+      if (isPresent(props.row.type)) parts.push(String(props.row.type));
       return parts.join(" · ");
     });
     // Mirror the desktop q-table period/frequency column formatters so the
@@ -141,23 +166,50 @@ export default defineComponent({
       if (v === undefined || v === null || v === "") return "";
       return props.row.frequency_type === "cron" ? String(v) : `${v} Mins`;
     });
-    return { moreIcon, subtitle, formattedPeriod, formattedFrequency };
+    return { moreIcon, subtitle, formattedPeriod, formattedFrequency, vibrate };
+  },
+  methods: {
+    onSwipeLeft({ reset }: { reset: () => void }) {
+      this.vibrate("selection");
+      this.$emit("toggle", this.row);
+      reset();
+    },
+    onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
+      this.$emit("delete", this.row);
+      reset();
+    },
   },
 });
 </script>
 
 <style scoped lang="scss">
+@import "@/styles/mobile-cards";
+
+.mobile-alert-card-slide {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 .mobile-alert-card {
+  @include mobile-card-accent("alert-accent");
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
+  padding: 10px 12px 10px 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background 150ms ease,
     transform 120ms ease;
+
+  &::before {
+    transition: background 150ms ease;
+  }
+
+  &[data-tone="on"] { --alert-accent: var(--o2-status-success-text, #21ba45); }
+  &[data-tone="off"] { --alert-accent: var(--o2-text-muted, #818594); }
 
   &:active {
     background: var(--o2-hover-accent);
@@ -232,6 +284,7 @@ export default defineComponent({
     gap: 10px;
     font-size: 11px;
     color: var(--o2-text-muted, #818594);
+    font-variant-numeric: tabular-nums;
   }
 
   &__meta-item {

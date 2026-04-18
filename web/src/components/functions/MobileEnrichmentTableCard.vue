@@ -13,6 +13,7 @@ Licensed under AGPL v3. -->
     </template>
     <div
       class="mobile-enrichment-card"
+      :data-tone="badge.tone"
       @click="$emit('click', row)"
       @keydown.enter="$emit('click', row)"
       @keydown.space.prevent="$emit('click', row)"
@@ -99,6 +100,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { computed, defineComponent, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 type Tone = "file" | "url" | "ok" | "warn" | "err" | "pending";
 
@@ -112,6 +114,7 @@ export default defineComponent({
   },
   emits: ["click", "explore", "schema", "edit", "delete"],
   setup(props) {
+    const { vibrate } = useHaptics();
     // URL-backed enrichment tables run async ingestion jobs whose state lives
     // in row.aggregateStatus: "completed" | "processing" | "pending" | "failed".
     // File-uploaded tables have no urlJobs and are always ready. The gating
@@ -154,10 +157,12 @@ export default defineComponent({
       canEdit,
       badge,
       metaLine,
+      vibrate,
     };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },
@@ -166,6 +171,8 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+@import "@/styles/mobile-cards";
+
 .mobile-enrichment-card-slide {
   margin-bottom: 8px;
   border-radius: 8px;
@@ -173,15 +180,23 @@ export default defineComponent({
 }
 
 .mobile-enrichment-card {
+  @include mobile-card-accent("enrich-accent");
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background 150ms ease,
     transform 120ms ease;
+
+  &[data-tone="file"],
+  &[data-tone="url"] { --enrich-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="ok"] { --enrich-accent: var(--q-positive, #21ba45); }
+  &[data-tone="warn"],
+  &[data-tone="pending"] { --enrich-accent: var(--q-warning, #f2c037); }
+  &[data-tone="err"] { --enrich-accent: var(--q-negative, #c10015); }
 
   &:active {
     background: var(--o2-hover-accent);
@@ -252,6 +267,7 @@ export default defineComponent({
     margin: 4px 0 0 28px;
     font-size: 12px;
     color: var(--o2-text-secondary);
+    font-variant-numeric: tabular-nums;
   }
 }
 </style>

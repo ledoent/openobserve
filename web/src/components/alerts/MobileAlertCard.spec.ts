@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { Quasar } from "quasar";
 import MobileAlertCard from "./MobileAlertCard.vue";
@@ -37,7 +37,9 @@ describe("MobileAlertCard", () => {
   it("shows Paused state and applies disabled modifier when row.enabled is false", () => {
     const w = mountCard({ ...baseRow, enabled: false });
     expect(w.find(".mobile-alert-card__state").text()).toBe("Paused");
-    expect(w.classes()).toContain("mobile-alert-card--disabled");
+    expect(w.find(".mobile-alert-card").classes()).toContain(
+      "mobile-alert-card--disabled",
+    );
   });
 
   it("renders meta items when present", () => {
@@ -50,20 +52,27 @@ describe("MobileAlertCard", () => {
 
   it("emits click with row on card click", async () => {
     const w = mountCard(baseRow);
-    await w.trigger("click");
+    await w.find(".mobile-alert-card").trigger("click");
     expect(w.emitted("click")).toBeTruthy();
     expect(w.emitted("click")![0]).toEqual([baseRow]);
   });
 
   it("emits click on Enter keydown", async () => {
     const w = mountCard(baseRow);
-    await w.trigger("keydown.enter");
+    await w.find(".mobile-alert-card").trigger("keydown.enter");
     expect(w.emitted("click")).toBeTruthy();
   });
 
   it("omits subtitle when stream_name and type are absent", () => {
     const w = mountCard({ ...baseRow, stream_name: undefined, type: undefined });
     expect(w.find(".mobile-alert-card__subtitle").exists()).toBe(false);
+  });
+
+  it("skips em-dash / double-dash placeholders in subtitle", () => {
+    const emDash = mountCard({ ...baseRow, stream_name: "—" });
+    expect(emDash.find(".mobile-alert-card__subtitle").text()).toBe("scheduled");
+    const dashes = mountCard({ ...baseRow, stream_name: "--", type: "--" });
+    expect(dashes.find(".mobile-alert-card__subtitle").exists()).toBe(false);
   });
 
   it("formats numeric period as human-readable minutes/hours", () => {
@@ -108,5 +117,52 @@ describe("MobileAlertCard", () => {
     const more = w.find(".mobile-alert-card__more");
     await more.trigger("click");
     expect(w.emitted("click")).toBeFalsy();
+  });
+
+  it("emits toggle when swipe-left handler is invoked", () => {
+    const w = mountCard(baseRow);
+    const reset = vi.fn();
+    (w.vm as any).onSwipeLeft({ reset });
+    expect(w.emitted("toggle")).toBeTruthy();
+    expect(w.emitted("toggle")![0]).toEqual([baseRow]);
+    expect(reset).toHaveBeenCalled();
+  });
+
+  it("emits delete when swipe-right handler is invoked", () => {
+    const w = mountCard(baseRow);
+    const reset = vi.fn();
+    (w.vm as any).onSwipeRight({ reset });
+    expect(w.emitted("delete")).toBeTruthy();
+    expect(w.emitted("delete")![0]).toEqual([baseRow]);
+    expect(reset).toHaveBeenCalled();
+  });
+
+  // One representative haptics assertion — all 12 mobile cards share the
+  // useHaptics() wiring, so exercising it once is enough to prove the swipe
+  // handlers route `selection` → toggle and `impact` → delete as intended.
+  describe("haptics", () => {
+    const originalVibrate = (globalThis.navigator as any).vibrate;
+    const vibrateSpy = vi.fn();
+
+    beforeEach(() => {
+      vibrateSpy.mockReset();
+      (globalThis.navigator as any).vibrate = vibrateSpy;
+    });
+
+    afterEach(() => {
+      (globalThis.navigator as any).vibrate = originalVibrate;
+    });
+
+    it("fires selection haptic (8ms) on swipe-left toggle", () => {
+      const w = mountCard(baseRow);
+      (w.vm as any).onSwipeLeft({ reset: vi.fn() });
+      expect(vibrateSpy).toHaveBeenCalledWith(8);
+    });
+
+    it("fires impact haptic (14ms) on swipe-right delete", () => {
+      const w = mountCard(baseRow);
+      (w.vm as any).onSwipeRight({ reset: vi.fn() });
+      expect(vibrateSpy).toHaveBeenCalledWith(14);
+    });
   });
 });
