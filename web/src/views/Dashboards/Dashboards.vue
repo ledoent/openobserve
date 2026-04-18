@@ -300,10 +300,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <div class="tw:w-full tw:h-full tw:pr-[0.625rem] tw:pb-[0.625rem]">
             <div class="tw:h-full card-container">
           <!-- Mobile: card list replaces 6-column table on <600px -->
-          <div
+          <PullToRefreshWrapper
             v-if="isMobile"
             class="mobile-dashboard-list"
             data-test="dashboard-list-mobile"
+            @refresh="onMobileRefresh"
           >
             <div v-if="loading" class="mobile-dashboard-list__loading">
               <q-spinner color="primary" size="32px" />
@@ -324,7 +325,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               @move="(r) => showMoveDashboardPanel(r)"
               @delete="(r) => showDeleteDialogFn({ row: r })"
             />
-          </div>
+          </PullToRefreshWrapper>
           <!-- Desktop: full data table -->
           <q-table
             v-else
@@ -697,6 +698,7 @@ import { useI18n } from "vue-i18n";
 
 import dashboardService from "../../services/dashboards";
 import MobileDashboardCard from "@/components/dashboards/MobileDashboardCard.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
 import { useScreen } from "@/composables/useScreen";
 import { useResponsiveDialog } from "@/composables/useResponsiveDialog";
 import QTablePagination from "../../components/shared/grid/Pagination.vue";
@@ -750,6 +752,7 @@ export default defineComponent({
     ConfirmDialog,
     AddFolder,
     MobileDashboardCard,
+    PullToRefreshWrapper,
     MoveDashboardToAnotherFolder,
   },
   setup() {
@@ -1153,6 +1156,13 @@ export default defineComponent({
       });
     };
     const dashboardList = ref([]);
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await getDashboards();
+      } finally {
+        ack();
+      }
+    };
     const getDashboards = async () => {
       const dismiss = $q.notify({
         spinner: true,
@@ -1569,6 +1579,7 @@ export default defineComponent({
       deleteDashboard,
       duplicateDashboard,
       getDashboards,
+      onMobileRefresh,
       getImageURL,
       verifyOrganizationStatus,
       splitterModel,

@@ -197,10 +197,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <div class="tw:w-full tw:h-full tw:pr-[0.625rem] tw:pb-[0.625rem]">
             <div class="tw:h-full card-container">
               <!-- Mobile: card list (replaces multi-column table on <600px) -->
-              <div
+              <PullToRefreshWrapper
                 v-if="isMobile"
                 class="mobile-alert-list"
                 data-test="alert-list-mobile"
+                @refresh="onMobileRefresh"
               >
                 <div
                   v-if="!filteredResults?.length"
@@ -220,7 +221,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   @trigger="triggerAlert"
                   @delete="(row) => showDeleteDialogFn({ row })"
                 />
-              </div>
+              </PullToRefreshWrapper>
               <!-- Desktop: multi-column Alert List Table -->
               <q-table
                 v-else
@@ -1000,6 +1001,7 @@ import {
 } from "@quasar/extras/material-icons-outlined";
 import FolderList from "../common/sidebar/FolderList.vue";
 import MobileAlertCard from "./MobileAlertCard.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
 import { useScreen } from "@/composables/useScreen";
 import { useResponsiveDialog } from "@/composables/useResponsiveDialog";
 
@@ -1028,6 +1030,7 @@ export default defineComponent({
     DedupSummaryCards,
     FolderList,
     MobileAlertCard,
+    PullToRefreshWrapper,
     MoveAcrossFolders,
     AppTabs,
     SelectFolderDropDown,
@@ -2169,6 +2172,13 @@ export default defineComponent({
         console.error("Navigation failed:", error);
       }
     };
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await refreshList();
+      } finally {
+        ack();
+      }
+    };
     const refreshList = async (folderId?: string) => {
       //here we are fetching the alerts from the server because after creating the alert we should get the latest alerts
       //and then we are setting the activeFolderId to the folderId
@@ -3023,6 +3033,7 @@ export default defineComponent({
       pagination,
       resultTotal,
       refreshList,
+      onMobileRefresh,
       perPageOptions,
       selectedPerPage,
       addAlert,

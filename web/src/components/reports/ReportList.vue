@@ -60,10 +60,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </div>
       <div class="tw:w-full tw:h-full tw:pb-[0.625rem]">
         <!-- Mobile: card list -->
-        <div
+        <PullToRefreshWrapper
           v-if="isMobile"
           class="mobile-report-list"
           data-test="report-list-mobile"
+          @refresh="onMobileRefresh"
         >
           <div
             v-if="!visibleRows.length"
@@ -80,7 +81,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             @toggle="toggleReportState"
             @delete="confirmDeleteReport"
           />
-        </div>
+        </PullToRefreshWrapper>
         <div v-else class="card-container full-width o2-quasar-table o2-row-md o2-quasar-table-header-sticky tw:h-[calc(100vh-128px)]">
           <q-table
             data-test="report-list-table"
@@ -293,6 +294,7 @@ import reports from "@/services/reports";
 import { cloneDeep } from "lodash-es";
 import AppTabs from "@/components/common/AppTabs.vue";
 import MobileReportCard from "./MobileReportCard.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
 import { useScreen } from "@/composables/useScreen";
 import { useReo } from "@/services/reodotdev_analytics";
 
@@ -411,16 +413,18 @@ const columns: any = ref<QTableProps["columns"]>([
   },
 ]);
 
-onBeforeMount(() => {
+const loadReports = (silent = false) => {
   isLoadingReports.value = true;
 
-  const dismiss = q.notify({
-    spinner: true,
-    message: "Please wait while fetching reports...",
-    timeout: 2000,
-  });
+  const dismiss = silent
+    ? () => {}
+    : q.notify({
+        spinner: true,
+        message: "Please wait while fetching reports...",
+        timeout: 2000,
+      });
 
-  reports
+  return reports
     .list(store.state.selectedOrganization.identifier)
     .then((res: any) => {
       reportsTableRows.value = res.data.map((report: any, index: number) => ({
@@ -449,6 +453,18 @@ onBeforeMount(() => {
       isLoadingReports.value = false;
       dismiss();
     });
+};
+
+const onMobileRefresh = async (ack: () => void) => {
+  try {
+    await loadReports(true);
+  } finally {
+    ack();
+  }
+};
+
+onBeforeMount(() => {
+  loadReports();
 });
 
 const changePagination = (val: { label: string; value: any }) => {
