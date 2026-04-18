@@ -13,6 +13,7 @@ Licensed under AGPL v3. -->
     </template>
     <div
       class="mobile-stream-card"
+      :data-tone="streamTypeTone"
       @click="$emit('click', row)"
       @keydown.enter="$emit('click', row)"
       @keydown.space.prevent="$emit('click', row)"
@@ -157,15 +158,36 @@ export default defineComponent({
 }
 
 .mobile-stream-card {
+  position: relative;
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background 150ms ease,
     transform 120ms ease;
+  overflow: hidden;
+
+  // Left-edge accent stripe keyed to stream type — reinforces the badge
+  // color so a list of mixed-type streams is scannable at a glance.
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--stream-accent, var(--o2-primary, #5960b2));
+    opacity: 0.85;
+  }
+
+  &[data-tone="logs"] { --stream-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="metrics"] { --stream-accent: #0d8a6a; }
+  &[data-tone="traces"] { --stream-accent: #b26a00; }
+  &[data-tone="metadata"] { --stream-accent: #5c5f66; }
+  &[data-tone="enrichment"] { --stream-accent: #7a3ea1; }
 
   &:active {
     background: var(--o2-hover-accent);
@@ -239,6 +261,7 @@ export default defineComponent({
     margin: 4px 0 0 28px;
     font-size: 12px;
     color: var(--o2-text-secondary);
+    font-variant-numeric: tabular-nums;
   }
 }
 </style>

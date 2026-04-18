@@ -13,6 +13,7 @@ Licensed under AGPL v3. -->
     </template>
     <div
       class="mobile-enrichment-card"
+      :data-tone="badge.tone"
       @click="$emit('click', row)"
       @keydown.enter="$emit('click', row)"
       @keydown.space.prevent="$emit('click', row)"
@@ -177,15 +178,35 @@ export default defineComponent({
 }
 
 .mobile-enrichment-card {
+  position: relative;
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background 150ms ease,
     transform 120ms ease;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--enrich-accent, var(--o2-primary, #5960b2));
+    opacity: 0.85;
+  }
+
+  &[data-tone="file"],
+  &[data-tone="url"] { --enrich-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="ok"] { --enrich-accent: var(--q-positive, #21ba45); }
+  &[data-tone="warn"],
+  &[data-tone="pending"] { --enrich-accent: var(--q-warning, #f2c037); }
+  &[data-tone="err"] { --enrich-accent: var(--q-negative, #c10015); }
 
   &:active {
     background: var(--o2-hover-accent);
@@ -256,6 +277,7 @@ export default defineComponent({
     margin: 4px 0 0 28px;
     font-size: 12px;
     color: var(--o2-text-secondary);
+    font-variant-numeric: tabular-nums;
   }
 }
 </style>

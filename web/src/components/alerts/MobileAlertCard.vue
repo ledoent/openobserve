@@ -20,6 +20,7 @@ Licensed under AGPL v3. -->
   <div
     class="mobile-alert-card"
     :class="{ 'mobile-alert-card--disabled': !row.enabled }"
+    :data-tone="row.enabled ? 'on' : 'off'"
     @click="$emit('click', row)"
     @keydown.enter="$emit('click', row)"
     @keydown.space.prevent="$emit('click', row)"
@@ -184,15 +185,32 @@ export default defineComponent({
 }
 
 .mobile-alert-card {
+  position: relative;
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background 150ms ease,
     transform 120ms ease;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--alert-accent, var(--o2-text-muted, #818594));
+    opacity: 0.85;
+    transition: background 150ms ease;
+  }
+
+  &[data-tone="on"] { --alert-accent: var(--o2-status-success-text, #21ba45); }
+  &[data-tone="off"] { --alert-accent: var(--o2-text-muted, #818594); }
 
   &:active {
     background: var(--o2-hover-accent);
@@ -267,6 +285,7 @@ export default defineComponent({
     gap: 10px;
     font-size: 11px;
     color: var(--o2-text-muted, #818594);
+    font-variant-numeric: tabular-nums;
   }
 
   &__meta-item {

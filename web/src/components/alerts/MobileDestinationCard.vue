@@ -13,6 +13,7 @@ Licensed under AGPL v3. -->
     </template>
     <div
       class="mobile-destination-card"
+      :data-tone="(row.type || 'http').toLowerCase()"
       @click="$emit('click', row)"
       @keydown.enter="$emit('click', row)"
       @keydown.space.prevent="$emit('click', row)"
@@ -144,15 +145,32 @@ export default defineComponent({
 }
 
 .mobile-destination-card {
+  position: relative;
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background 150ms ease,
     transform 120ms ease;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--dest-accent, var(--o2-primary, #5960b2));
+    opacity: 0.85;
+  }
+
+  &[data-tone="http"] { --dest-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="email"] { --dest-accent: #0d8a6a; }
+  &[data-tone="action"] { --dest-accent: #b26a00; }
 
   &:active {
     background: var(--o2-hover-accent);
