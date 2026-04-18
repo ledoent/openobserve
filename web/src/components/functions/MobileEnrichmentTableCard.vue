@@ -112,6 +112,12 @@ export default defineComponent({
   },
   emits: ["click", "explore", "schema", "edit", "delete"],
   setup(props) {
+    // URL-backed enrichment tables run async ingestion jobs whose state lives
+    // in row.aggregateStatus: "completed" | "processing" | "pending" | "failed".
+    // File-uploaded tables have no urlJobs and are always ready. The gating
+    // below mirrors the desktop row-slot predicates in EnrichmentTableList.vue:
+    // explore/schema need a ready table; edit is also available after failure
+    // so the user can fix the source URL; delete is always allowed.
     const hasUrlJobs = computed(
       () => Array.isArray(props.row.urlJobs) && props.row.urlJobs.length > 0,
     );
