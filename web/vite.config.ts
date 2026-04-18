@@ -101,6 +101,20 @@ export default defineConfig({
   },
   server: {
     port: 8081,
+    // Opt-in dev proxy for pointing the local UI at a remote OpenObserve
+    // backend. Set VITE_DEV_PROXY_TARGET=https://your-host to enable.
+    // Avoids CORS wildcard-vs-credentials rejections when iterating against
+    // a prod/staging backend without running a local server.
+    proxy: process.env.VITE_DEV_PROXY_TARGET
+      ? {
+          "/config": { target: process.env.VITE_DEV_PROXY_TARGET, changeOrigin: true, secure: false },
+          "/auth": { target: process.env.VITE_DEV_PROXY_TARGET, changeOrigin: true, secure: false },
+          "/api": { target: process.env.VITE_DEV_PROXY_TARGET, changeOrigin: true, secure: false },
+          "/aws": { target: process.env.VITE_DEV_PROXY_TARGET, changeOrigin: true, secure: false },
+          "/proxy": { target: process.env.VITE_DEV_PROXY_TARGET, changeOrigin: true, secure: false },
+          "/healthz": { target: process.env.VITE_DEV_PROXY_TARGET, changeOrigin: true, secure: false },
+        }
+      : undefined,
     // headers: {
     //   "Content-Security-Policy":
     //     "default-src 'self'; connect-src 'self' http://localhost:5080;  script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;img-src 'self' data:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; block-all-mixed-content;",
