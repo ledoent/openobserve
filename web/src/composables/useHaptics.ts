@@ -31,14 +31,15 @@ const durations: Record<HapticKind, number | number[]> = {
   warning: [8, 40, 8],
 };
 
-export function useHaptics() {
-  const supportsVibrate =
-    typeof globalThis !== "undefined" &&
-    typeof (globalThis.navigator as Navigator | undefined)?.vibrate ===
-      "function";
+const hasVibrate = () =>
+  typeof globalThis !== "undefined" &&
+  typeof (globalThis.navigator as Navigator | undefined)?.vibrate === "function";
 
+export function useHaptics() {
   const vibrate = (kind: HapticKind = "selection") => {
-    if (!supportsVibrate) return;
+    // Re-check at call time rather than capturing at setup so SSR hydration
+    // and test environments that stub `navigator` after import still work.
+    if (!hasVibrate()) return;
     try {
       globalThis.navigator.vibrate(durations[kind]);
     } catch {
@@ -47,5 +48,5 @@ export function useHaptics() {
     }
   };
 
-  return { vibrate, supportsVibrate };
+  return { vibrate, supportsVibrate: hasVibrate() };
 }

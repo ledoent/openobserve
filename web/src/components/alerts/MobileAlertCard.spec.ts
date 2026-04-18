@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { Quasar } from "quasar";
 import MobileAlertCard from "./MobileAlertCard.vue";
@@ -128,5 +128,34 @@ describe("MobileAlertCard", () => {
     expect(w.emitted("delete")).toBeTruthy();
     expect(w.emitted("delete")![0]).toEqual([baseRow]);
     expect(reset).toHaveBeenCalled();
+  });
+
+  // One representative haptics assertion — all 12 mobile cards share the
+  // useHaptics() wiring, so exercising it once is enough to prove the swipe
+  // handlers route `selection` → toggle and `impact` → delete as intended.
+  describe("haptics", () => {
+    const originalVibrate = (globalThis.navigator as any).vibrate;
+    const vibrateSpy = vi.fn();
+
+    beforeEach(() => {
+      vibrateSpy.mockReset();
+      (globalThis.navigator as any).vibrate = vibrateSpy;
+    });
+
+    afterEach(() => {
+      (globalThis.navigator as any).vibrate = originalVibrate;
+    });
+
+    it("fires selection haptic (8ms) on swipe-left toggle", () => {
+      const w = mountCard(baseRow);
+      (w.vm as any).onSwipeLeft({ reset: vi.fn() });
+      expect(vibrateSpy).toHaveBeenCalledWith(8);
+    });
+
+    it("fires impact haptic (14ms) on swipe-right delete", () => {
+      const w = mountCard(baseRow);
+      (w.vm as any).onSwipeRight({ reset: vi.fn() });
+      expect(vibrateSpy).toHaveBeenCalledWith(14);
+    });
   });
 });
