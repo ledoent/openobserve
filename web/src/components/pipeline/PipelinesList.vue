@@ -145,7 +145,37 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </div>
 
       <div class="tw:w-full tw:h-full tw:pb-[0.625rem]">
-        <div class="card-container tw:h-[calc(100vh-127px)]">
+        <div
+          v-if="isMobile"
+          class="card-container mobile-pipeline-list-wrap"
+        >
+          <PullToRefreshWrapper
+            class="mobile-pipeline-list-scroll"
+            @refresh="onMobileRefresh"
+          >
+            <div
+              v-if="visibleRows.length === 0"
+              class="mobile-pipeline-list-empty"
+            >
+              <no-data />
+            </div>
+            <div v-else class="mobile-pipeline-list">
+              <MobilePipelineCard
+                v-for="row in visibleRows"
+                :key="row.pipeline_id"
+                :row="row"
+                :is-enterprise="config.isEnterprise == 'true'"
+                @click="editPipeline($event)"
+                @toggle="togglePipeline($event)"
+                @edit="editPipeline($event)"
+                @export="exportPipeline($event)"
+                @backfill="openBackfillDialog($event)"
+                @delete="openDeleteDialog($event)"
+              />
+            </div>
+          </PullToRefreshWrapper>
+        </div>
+        <div v-else class="card-container tw:h-[calc(100vh-127px)]">
           <q-table
             data-test="pipeline-list-table"
             ref="qTableRef"
@@ -601,6 +631,9 @@ import AppTabs from "@/components/common/AppTabs.vue";
 import PipelineView from "./PipelineView.vue";
 import ResumePipelineDialog from "../ResumePipelineDialog.vue";
 import CreateBackfillJobDialog from "@/components/pipelines/CreateBackfillJobDialog.vue";
+import MobilePipelineCard from "./MobilePipelineCard.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import { useScreen } from "@/composables/useScreen";
 
 import { filter, update } from "lodash-es";
 
@@ -618,6 +651,16 @@ const router = useRouter();
 const qTableRef: any = ref({});
 
 const q = useQuasar();
+const { isMobile } = useScreen();
+
+const onMobileRefresh = async (ack: () => void) => {
+  try {
+    await getPipelines();
+    updateActiveTab();
+  } finally {
+    ack();
+  }
+};
 
 const filterQuery = ref("");
 
@@ -1447,6 +1490,25 @@ const onBackfillSuccess = (jobId: string) => {
   width: 100%;
   justify-content: space-between;
   align-items: center;
+}
+
+@media (max-width: 599px) {
+  .mobile-pipeline-list-wrap {
+    border: none;
+    padding: 12px;
+    height: calc(100vh - var(--navbar-height) - 120px);
+  }
+  .mobile-pipeline-list-scroll {
+    height: 100%;
+    overflow-y: auto;
+  }
+  .mobile-pipeline-list {
+    padding-bottom: 16px;
+  }
+  .mobile-pipeline-list-empty {
+    padding: 32px 16px;
+    text-align: center;
+  }
 }
 
 
