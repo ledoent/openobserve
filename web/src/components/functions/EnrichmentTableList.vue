@@ -59,7 +59,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             </div>
           </div>
         </div>
-        <div class="tw:w-full tw:h-full tw:pb-[0.625rem]">
+        <div
+          v-if="useCardLayout"
+          class="card-container mobile-enrichment-list-wrap"
+        >
+          <PullToRefreshWrapper
+            class="mobile-enrichment-list-scroll"
+            @refresh="onMobileRefresh"
+          >
+            <div
+              v-if="visibleRows.length === 0"
+              class="mobile-enrichment-list-empty"
+            >
+              <span>{{ t("function.noEnrichmentTables") || "No enrichment tables yet" }}</span>
+            </div>
+            <div v-else class="mobile-enrichment-list">
+              <MobileEnrichmentTableCard
+                v-for="row in visibleRows"
+                :key="row.name"
+                :row="row"
+                @click="(r: any) => showAddUpdateFn({ row: r })"
+                @explore="(r: any) => exploreEnrichmentTable({ row: r })"
+                @schema="(r: any) => listSchema({ row: r })"
+                @edit="(r: any) => showAddUpdateFn({ row: r })"
+                @delete="(r: any) => showDeleteDialogFn({ row: r })"
+              />
+            </div>
+          </PullToRefreshWrapper>
+        </div>
+        <div v-else class="tw:w-full tw:h-full tw:pb-[0.625rem]">
           <div class="card-container tw:h-[calc(100vh-127px)]">
             <q-table
               ref="qTable"
@@ -392,6 +420,8 @@ import useStreams from "@/composables/useStreams";
 import EnrichmentSchema from "./EnrichmentSchema.vue";
 import { useReo } from "@/services/reodotdev_analytics";
 import jsTransformService from "@/services/jstransform";
+import PullToRefreshWrapper from "../shared/PullToRefreshWrapper.vue";
+import MobileEnrichmentTableCard from "./MobileEnrichmentTableCard.vue";
 
 export default defineComponent({
   name: "EnrichmentTableList",
@@ -402,6 +432,8 @@ export default defineComponent({
     ConfirmDialog,
     EnrichmentSchema,
     AppTabs,
+    PullToRefreshWrapper,
+    MobileEnrichmentTableCard,
   },
   emits: [
     "updated:fields",
@@ -964,6 +996,18 @@ export default defineComponent({
     });
     const hasVisibleRows = computed(() => visibleRows.value.length > 0);
 
+    // Use cards (and bottom nav) up to the md breakpoint (<1024 px) so tablets
+    // also escape the desktop q-table layout.
+    const useCardLayout = computed(() => $q.screen.lt.md);
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        resetStreamType("enrichment_tables");
+        await getLookupTables(true);
+      } finally {
+        ack();
+      }
+    };
+
     // Watch visibleRows to sync resultTotal with search filter
     watch(visibleRows, (newVisibleRows) => {
       resultTotal.value = newVisibleRows.length;
@@ -1016,6 +1060,8 @@ export default defineComponent({
       formatSizeFromMB,
       filterTabs,
       updateActiveTab,
+      useCardLayout,
+      onMobileRefresh,
     };
   },
   computed: {
@@ -1042,6 +1088,31 @@ export default defineComponent({
 });
 </script>
 
+<style scoped lang="scss">
+@media (max-width: 1023px) {
+  .mobile-enrichment-list-wrap {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-enrichment-list-scroll {
+    height: calc(100vh - var(--navbar-height) - 92px - var(--o2-mobile-nav-height, 0px));
+  }
+
+  .mobile-enrichment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px;
+  }
+
+  .mobile-enrichment-list-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--o2-text-secondary);
+  }
+}
+</style>
 <style lang="scss">
 
 .search-en-table-input {
