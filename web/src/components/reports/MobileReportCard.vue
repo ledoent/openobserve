@@ -120,6 +120,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { defineComponent, computed, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobileReportCard",
@@ -132,6 +133,7 @@ export default defineComponent({
   emits: ["click", "toggle", "edit", "delete"],
   setup(props) {
     const moreIcon = outlinedMoreVert;
+    const { vibrate } = useHaptics();
     const reportType = computed(
       () => props.row.dashboards?.[0]?.report_type,
     );
@@ -140,14 +142,16 @@ export default defineComponent({
       if (!v || v === "-") return "";
       return String(v);
     });
-    return { moreIcon, reportType, lastTriggered };
+    return { moreIcon, reportType, lastTriggered, vibrate };
   },
   methods: {
     onSwipeLeft({ reset }: { reset: () => void }) {
+      this.vibrate("selection");
       this.$emit("toggle", this.row);
       reset();
     },
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },

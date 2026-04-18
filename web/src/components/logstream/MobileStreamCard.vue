@@ -83,6 +83,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { computed, defineComponent, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 type Tone = "logs" | "metrics" | "traces" | "metadata" | "enrichment";
 
@@ -100,6 +101,7 @@ export default defineComponent({
   },
   emits: ["click", "explore", "schema", "delete"],
   setup(props) {
+    const { vibrate } = useHaptics();
     const streamTypeLabel = computed(() => {
       const raw = (props.row.stream_type || "").toString();
       return raw ? raw.replace(/_/g, " ") : "";
@@ -134,10 +136,12 @@ export default defineComponent({
       streamTypeLabel,
       streamTypeTone,
       metaLine,
+      vibrate,
     };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },

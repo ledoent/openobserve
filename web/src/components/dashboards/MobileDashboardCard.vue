@@ -95,6 +95,7 @@ Licensed under AGPL v3. -->
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobileDashboardCard",
@@ -105,8 +106,13 @@ export default defineComponent({
     },
   },
   emits: ["click", "open", "clone", "move", "delete"],
+  setup() {
+    const { vibrate } = useHaptics();
+    return { vibrate };
+  },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },

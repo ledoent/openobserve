@@ -120,6 +120,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { defineComponent, computed, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobileAlertCard",
@@ -132,6 +133,7 @@ export default defineComponent({
   emits: ["click", "toggle", "edit", "clone", "move", "trigger", "delete"],
   setup(props) {
     const moreIcon = outlinedMoreVert;
+    const { vibrate } = useHaptics();
     const subtitle = computed(() => {
       const parts: string[] = [];
       if (props.row.stream_name) parts.push(String(props.row.stream_name));
@@ -157,14 +159,16 @@ export default defineComponent({
       if (v === undefined || v === null || v === "") return "";
       return props.row.frequency_type === "cron" ? String(v) : `${v} Mins`;
     });
-    return { moreIcon, subtitle, formattedPeriod, formattedFrequency };
+    return { moreIcon, subtitle, formattedPeriod, formattedFrequency, vibrate };
   },
   methods: {
     onSwipeLeft({ reset }: { reset: () => void }) {
+      this.vibrate("selection");
       this.$emit("toggle", this.row);
       reset();
     },
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },

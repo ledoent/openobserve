@@ -85,6 +85,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { computed, defineComponent, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobileFunctionCard",
@@ -96,6 +97,7 @@ export default defineComponent({
   },
   emits: ["click", "edit", "delete", "pipelines"],
   setup(props) {
+    const { vibrate } = useHaptics();
     const normalizedType = computed(() => {
       const raw = props.row.transType;
       if (raw === 1 || raw === "1") return "vrl";
@@ -108,10 +110,11 @@ export default defineComponent({
       if (!single) return "";
       return single.length > 80 ? `${single.slice(0, 80)}…` : single;
     });
-    return { moreIcon: outlinedMoreVert, normalizedType, preview };
+    return { moreIcon: outlinedMoreVert, normalizedType, preview, vibrate };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },

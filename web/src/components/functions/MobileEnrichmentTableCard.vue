@@ -99,6 +99,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { computed, defineComponent, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 type Tone = "file" | "url" | "ok" | "warn" | "err" | "pending";
 
@@ -112,6 +113,7 @@ export default defineComponent({
   },
   emits: ["click", "explore", "schema", "edit", "delete"],
   setup(props) {
+    const { vibrate } = useHaptics();
     // URL-backed enrichment tables run async ingestion jobs whose state lives
     // in row.aggregateStatus: "completed" | "processing" | "pending" | "failed".
     // File-uploaded tables have no urlJobs and are always ready. The gating
@@ -154,10 +156,12 @@ export default defineComponent({
       canEdit,
       badge,
       metaLine,
+      vibrate,
     };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },
