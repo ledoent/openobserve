@@ -569,9 +569,12 @@ export default defineComponent({
     setHistogramDate(date: any) {
       this.searchBarRef.dateTimeRef.setCustomDate("absolute", date);
     },
-    // Mobile pull-to-refresh: re-run the current query once without touching
-    // the live-mode polling interval. Ack() is invoked in every branch so the
-    // PullToRefreshWrapper spinner always dismisses.
+    // Mobile pull-to-refresh: re-run the current query once without
+    // disturbing the live-mode polling timer. We deliberately call
+    // getQueryData/handleRunQueryFn directly rather than refreshData(), so
+    // a manual pull never resets refreshInterval or the polling cadence.
+    // Ack() runs in a finally block so the wrapper spinner always dismisses,
+    // including the loading short-circuit and the no-stream / no-mode no-ops.
     async onMobileLogsRefresh(ack: () => void) {
       try {
         if (this.searchObj.loading) return;
