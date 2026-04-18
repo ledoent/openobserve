@@ -58,7 +58,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             borderless
             filled
             dense
-            class="q-ml-auto q-mb-xs no-border col-3"
+            class="q-ml-auto q-mb-xs no-border col-12 col-sm-3 o2-mobile-full-input"
             :placeholder="t('settings.searchOrgs')"
           >
             <template #prepend>
