@@ -2,6 +2,15 @@
 Licensed under AGPL v3. -->
 
 <template>
+  <q-slide-item
+    class="mobile-dashboard-card-slide"
+    right-color="red"
+    @right="onSwipeRight"
+  >
+    <template #right>
+      <span class="q-mr-xs">Delete</span>
+      <q-icon name="delete" />
+    </template>
   <div
     class="mobile-dashboard-card"
     @click="$emit('click', row)"
@@ -81,6 +90,7 @@ Licensed under AGPL v3. -->
       </span>
     </div>
   </div>
+  </q-slide-item>
 </template>
 
 <script lang="ts">
@@ -95,16 +105,27 @@ export default defineComponent({
     },
   },
   emits: ["click", "open", "clone", "move", "delete"],
+  methods: {
+    onSwipeRight({ reset }: { reset: () => void }) {
+      this.$emit("delete", this.row);
+      reset();
+    },
+  },
 });
 </script>
 
 <style scoped lang="scss">
+.mobile-dashboard-card-slide {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 .mobile-dashboard-card {
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
   padding: 10px 12px;
-  margin-bottom: 8px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:

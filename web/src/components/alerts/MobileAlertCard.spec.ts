@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { Quasar } from "quasar";
 import MobileAlertCard from "./MobileAlertCard.vue";
@@ -37,7 +37,9 @@ describe("MobileAlertCard", () => {
   it("shows Paused state and applies disabled modifier when row.enabled is false", () => {
     const w = mountCard({ ...baseRow, enabled: false });
     expect(w.find(".mobile-alert-card__state").text()).toBe("Paused");
-    expect(w.classes()).toContain("mobile-alert-card--disabled");
+    expect(w.find(".mobile-alert-card").classes()).toContain(
+      "mobile-alert-card--disabled",
+    );
   });
 
   it("renders meta items when present", () => {
@@ -50,14 +52,14 @@ describe("MobileAlertCard", () => {
 
   it("emits click with row on card click", async () => {
     const w = mountCard(baseRow);
-    await w.trigger("click");
+    await w.find(".mobile-alert-card").trigger("click");
     expect(w.emitted("click")).toBeTruthy();
     expect(w.emitted("click")![0]).toEqual([baseRow]);
   });
 
   it("emits click on Enter keydown", async () => {
     const w = mountCard(baseRow);
-    await w.trigger("keydown.enter");
+    await w.find(".mobile-alert-card").trigger("keydown.enter");
     expect(w.emitted("click")).toBeTruthy();
   });
 
@@ -108,5 +110,23 @@ describe("MobileAlertCard", () => {
     const more = w.find(".mobile-alert-card__more");
     await more.trigger("click");
     expect(w.emitted("click")).toBeFalsy();
+  });
+
+  it("emits toggle when swipe-left handler is invoked", () => {
+    const w = mountCard(baseRow);
+    const reset = vi.fn();
+    (w.vm as any).onSwipeLeft({ reset });
+    expect(w.emitted("toggle")).toBeTruthy();
+    expect(w.emitted("toggle")![0]).toEqual([baseRow]);
+    expect(reset).toHaveBeenCalled();
+  });
+
+  it("emits delete when swipe-right handler is invoked", () => {
+    const w = mountCard(baseRow);
+    const reset = vi.fn();
+    (w.vm as any).onSwipeRight({ reset });
+    expect(w.emitted("delete")).toBeTruthy();
+    expect(w.emitted("delete")![0]).toEqual([baseRow]);
+    expect(reset).toHaveBeenCalled();
   });
 });
