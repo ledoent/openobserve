@@ -53,7 +53,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </div>
     </div>
       <div class="tw:w-full tw:h-full">
-      <div class="card-container tw:h-[calc(100vh-var(--navbar-height)-92px)]">
+      <div
+        v-if="useCardLayout"
+        class="card-container mobile-role-list-wrap"
+      >
+        <PullToRefreshWrapper
+          class="mobile-role-list-scroll"
+          @refresh="onMobileRefresh"
+        >
+          <div
+            v-if="visibleRows.length === 0"
+            class="mobile-role-list-empty"
+          >
+            <span>{{ t("iam.noRolesYet") || "No roles yet" }}</span>
+          </div>
+          <div v-else class="mobile-role-list">
+            <MobileRoleCard
+              v-for="row in visibleRows"
+              :key="row.role_name"
+              :row="row"
+              @click="editRole"
+              @edit="editRole"
+              @delete="showConfirmDialog"
+            />
+          </div>
+        </PullToRefreshWrapper>
+      </div>
+      <div v-else class="card-container tw:h-[calc(100vh-var(--navbar-height)-92px)]">
     <app-table
       data-test="iam-roles-table-section"
       class="iam-table o2-quasar-app-table o2-quasar-table-header-sticky"
@@ -163,6 +189,8 @@ import { useQuasar } from "quasar";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import { useReo } from "@/services/reodotdev_analytics";
 import { outlinedDelete } from "@quasar/extras/material-icons-outlined";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import MobileRoleCard from "./MobileRoleCard.vue";
 
 const { t } = useI18n();
 
@@ -370,9 +398,45 @@ const visibleRows = computed(() => {
 })
 
 const hasVisibleRows = computed(() => visibleRows.value.length > 0)
+
+// Use cards (and bottom nav) up to the md breakpoint (<1024 px) so tablets
+// also escape the desktop app-table layout on this and other Phase-9 list pages.
+const useCardLayout = computed(() => q.screen.lt.md);
+
+const onMobileRefresh = async (ack: () => void) => {
+  try {
+    await setupRoles();
+  } finally {
+    ack();
+  }
+};
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+@media (max-width: 1023px) {
+  .mobile-role-list-wrap {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-role-list-scroll {
+    height: calc(100vh - var(--navbar-height) - 92px - var(--o2-mobile-nav-height, 0px));
+  }
+
+  .mobile-role-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px;
+  }
+
+  .mobile-role-list-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--o2-text-secondary);
+  }
+}
+</style>
 <style lang="scss">
 .iam-table {
   .thead-sticky,
