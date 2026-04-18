@@ -13,6 +13,7 @@ Licensed under AGPL v3. -->
     </template>
     <div
       class="mobile-destination-card"
+      :data-tone="(row.type || 'http').toLowerCase()"
       @click="$emit('click', row)"
       @keydown.enter="$emit('click', row)"
       @keydown.space.prevent="$emit('click', row)"
@@ -82,6 +83,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { computed, defineComponent, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobileDestinationCard",
@@ -97,6 +99,7 @@ export default defineComponent({
   },
   emits: ["click", "edit", "export", "delete"],
   setup(props) {
+    const { vibrate } = useHaptics();
     const iconName = computed(() => {
       switch ((props.row.type || "").toLowerCase()) {
         case "email":
@@ -122,10 +125,11 @@ export default defineComponent({
       }
       return bits.join(" · ");
     });
-    return { moreIcon: outlinedMoreVert, iconName, metaLine };
+    return { moreIcon: outlinedMoreVert, iconName, metaLine, vibrate };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },
@@ -134,6 +138,8 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+@import "@/styles/mobile-cards";
+
 .mobile-destination-card-slide {
   margin-bottom: 8px;
   border-radius: 8px;
@@ -141,15 +147,23 @@ export default defineComponent({
 }
 
 .mobile-destination-card {
+  @include mobile-card-accent("dest-accent");
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background 150ms ease,
     transform 120ms ease;
+
+  // Unknown destination types (beyond http/email/action) fall through to the
+  // mixin's default `--o2-primary` — matches the "http" look, which is fine
+  // as a conservative default for unrecognized rows.
+  &[data-tone="http"] { --dest-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="email"] { --dest-accent: #0d8a6a; }
+  &[data-tone="action"] { --dest-accent: #b26a00; }
 
   &:active {
     background: var(--o2-hover-accent);

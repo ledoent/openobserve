@@ -130,6 +130,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { defineComponent, computed, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobilePipelineCard",
@@ -146,6 +147,7 @@ export default defineComponent({
   emits: ["click", "toggle", "edit", "export", "backfill", "delete"],
   setup(props) {
     const moreIcon = outlinedMoreVert;
+    const { vibrate } = useHaptics();
     const sourceType = computed(
       () =>
         (props.row.type ||
@@ -171,14 +173,16 @@ export default defineComponent({
         (props.row.type === "scheduled" ||
           props.row.source?.source_type === "scheduled"),
     );
-    return { moreIcon, sourceType, subtitle, cadence, canBackfill };
+    return { moreIcon, sourceType, subtitle, cadence, canBackfill, vibrate };
   },
   methods: {
     onSwipeLeft({ reset }: { reset: () => void }) {
+      this.vibrate("selection");
       this.$emit("toggle", this.row);
       reset();
     },
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },

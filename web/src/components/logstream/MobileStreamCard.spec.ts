@@ -81,6 +81,23 @@ describe("MobileStreamCard", () => {
     expect(w.emitted("click")).toBeFalsy();
   });
 
+  it("rounds high-precision storage floats for readability", () => {
+    const w = mountCard({
+      ...logsRow,
+      storage_size: "0.0014781951904296875 MB",
+      compressed_size: "0.010556221008300781 MB",
+    });
+    const meta = w.find(".mobile-stream-card__meta").text();
+    expect(meta).not.toContain("0.0014781951904296875");
+    expect(meta).not.toContain("0.010556221008300781");
+    expect(meta).toContain("MB");
+  });
+
+  it("preserves already-formatted sizes untouched", () => {
+    const w = mountCard({ ...logsRow, storage_size: "42.5 MB" });
+    expect(w.find(".mobile-stream-card__meta").text()).toContain("42.5 MB");
+  });
+
   it("emits delete when swipe-right handler is invoked", () => {
     const w = mountCard(logsRow);
     const reset = vi.fn();

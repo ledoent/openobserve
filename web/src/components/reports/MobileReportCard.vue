@@ -2,6 +2,21 @@
 Licensed under AGPL v3. -->
 
 <template>
+  <q-slide-item
+    class="mobile-report-card-slide"
+    left-color="green"
+    right-color="red"
+    @left="onSwipeLeft"
+    @right="onSwipeRight"
+  >
+    <template #left>
+      <q-icon :name="row.enabled ? 'pause' : 'play_arrow'" />
+      <span class="q-ml-xs">{{ row.enabled ? "Pause" : "Start" }}</span>
+    </template>
+    <template #right>
+      <span class="q-mr-xs">Delete</span>
+      <q-icon name="delete" />
+    </template>
   <div
     class="mobile-report-card"
     :class="{ 'mobile-report-card--disabled': !row.enabled }"
@@ -99,11 +114,13 @@ Licensed under AGPL v3. -->
       </span>
     </div>
   </div>
+  </q-slide-item>
 </template>
 
 <script lang="ts">
 import { defineComponent, computed, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobileReportCard",
@@ -116,6 +133,7 @@ export default defineComponent({
   emits: ["click", "toggle", "edit", "delete"],
   setup(props) {
     const moreIcon = outlinedMoreVert;
+    const { vibrate } = useHaptics();
     const reportType = computed(
       () => props.row.dashboards?.[0]?.report_type,
     );
@@ -124,18 +142,35 @@ export default defineComponent({
       if (!v || v === "-") return "";
       return String(v);
     });
-    return { moreIcon, reportType, lastTriggered };
+    return { moreIcon, reportType, lastTriggered, vibrate };
+  },
+  methods: {
+    onSwipeLeft({ reset }: { reset: () => void }) {
+      this.vibrate("selection");
+      this.$emit("toggle", this.row);
+      reset();
+    },
+    onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
+      this.$emit("delete", this.row);
+      reset();
+    },
   },
 });
 </script>
 
 <style scoped lang="scss">
+.mobile-report-card-slide {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 .mobile-report-card {
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
   padding: 10px 12px;
-  margin-bottom: 8px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:

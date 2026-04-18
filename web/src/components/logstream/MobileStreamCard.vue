@@ -13,6 +13,7 @@ Licensed under AGPL v3. -->
     </template>
     <div
       class="mobile-stream-card"
+      :data-tone="streamTypeTone"
       @click="$emit('click', row)"
       @keydown.enter="$emit('click', row)"
       @keydown.space.prevent="$emit('click', row)"
@@ -83,6 +84,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { computed, defineComponent, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 type Tone = "logs" | "metrics" | "traces" | "metadata" | "enrichment";
 
@@ -100,6 +102,7 @@ export default defineComponent({
   },
   emits: ["click", "explore", "schema", "delete"],
   setup(props) {
+    const { vibrate } = useHaptics();
     const streamTypeLabel = computed(() => {
       const raw = (props.row.stream_type || "").toString();
       return raw ? raw.replace(/_/g, " ") : "";
@@ -112,20 +115,33 @@ export default defineComponent({
       if (raw === "enrichment_tables") return "enrichment";
       return "logs";
     });
+    // Backend returns storage strings like "0.0014781951904296875 MB" for
+    // tiny streams. Desktop q-table truncates visually via column width; on
+    // mobile the whole float wraps and looks broken, so round the numeric
+    // prefix to 2 decimals.
+    const trimSize = (raw: unknown): string => {
+      const s = String(raw ?? "").trim();
+      const m = s.match(/^(-?\d+(?:\.\d+)?)(\s*\S.*)?$/);
+      if (!m) return s;
+      const n = Number(m[1]);
+      if (!Number.isFinite(n)) return s;
+      const rounded = Math.abs(n) < 0.01 && n !== 0 ? n.toFixed(3) : n.toFixed(2);
+      return `${parseFloat(rounded)}${m[2] ?? ""}`;
+    };
     const metaLine = computed(() => {
       const bits: string[] = [];
       if (props.showDocCount && props.row.doc_num && props.row.doc_num !== "--") {
         bits.push(`${props.row.doc_num} docs`);
       }
       if (props.row.storage_size && props.row.storage_size !== "-- MB") {
-        bits.push(String(props.row.storage_size));
+        bits.push(trimSize(props.row.storage_size));
       }
       if (
         props.row.compressed_size &&
         props.row.compressed_size !== "-- MB" &&
         props.row.compressed_size !== "0 MB"
       ) {
-        bits.push(`${props.row.compressed_size} compressed`);
+        bits.push(`${trimSize(props.row.compressed_size)} compressed`);
       }
       return bits.join(" · ");
     });
@@ -134,10 +150,12 @@ export default defineComponent({
       streamTypeLabel,
       streamTypeTone,
       metaLine,
+      vibrate,
     };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },
@@ -146,6 +164,8 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+@import "@/styles/mobile-cards";
+
 .mobile-stream-card-slide {
   margin-bottom: 8px;
   border-radius: 8px;
@@ -153,15 +173,25 @@ export default defineComponent({
 }
 
 .mobile-stream-card {
+  @include mobile-card-accent("stream-accent");
   background: var(--o2-card-bg);
   border: 1px solid var(--o2-border-color);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
     background 150ms ease,
     transform 120ms ease;
+
+  // Left-edge accent stripe keyed to stream type — reinforces the badge
+  // color so a list of mixed-type streams is scannable at a glance.
+
+  &[data-tone="logs"] { --stream-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="metrics"] { --stream-accent: #0d8a6a; }
+  &[data-tone="traces"] { --stream-accent: #b26a00; }
+  &[data-tone="metadata"] { --stream-accent: #5c5f66; }
+  &[data-tone="enrichment"] { --stream-accent: #7a3ea1; }
 
   &:active {
     background: var(--o2-hover-accent);
@@ -235,6 +265,7 @@ export default defineComponent({
     margin: 4px 0 0 28px;
     font-size: 12px;
     color: var(--o2-text-secondary);
+    font-variant-numeric: tabular-nums;
   }
 }
 </style>

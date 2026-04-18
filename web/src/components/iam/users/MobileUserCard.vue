@@ -109,6 +109,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { defineComponent, computed, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 const PALETTE = [
   "#5960b2",
@@ -132,6 +133,7 @@ export default defineComponent({
   emits: ["click", "edit", "delete", "revoke"],
   setup(props) {
     const moreIcon = outlinedMoreVert;
+    const { vibrate } = useHaptics();
     const fullName = computed(() => {
       const parts = [props.row.first_name, props.row.last_name]
         .filter((p) => p && String(p).trim().length > 0)
@@ -162,13 +164,15 @@ export default defineComponent({
       const canRevoke = r.status === "pending" && r.token;
       return canEdit || canDelete || canRevoke;
     });
-    return { moreIcon, fullName, initials, avatarColor, showMenu };
+    return { moreIcon, fullName, initials, avatarColor, showMenu, vibrate };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
       if (this.row.status === "pending" && this.row.token) {
+        this.vibrate("impact");
         this.$emit("revoke", this.row);
       } else if (this.row.enableDelete) {
+        this.vibrate("impact");
         this.$emit("delete", this.row);
       }
       reset();

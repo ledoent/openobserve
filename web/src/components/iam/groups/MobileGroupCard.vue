@@ -67,6 +67,7 @@ Licensed under AGPL v3. -->
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
+import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
   name: "MobileGroupCard",
@@ -78,10 +79,12 @@ export default defineComponent({
   },
   emits: ["click", "edit", "delete"],
   setup() {
-    return { moreIcon: outlinedMoreVert };
+    const { vibrate } = useHaptics();
+    return { moreIcon: outlinedMoreVert, vibrate };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
+      this.vibrate("impact");
       this.$emit("delete", this.row);
       reset();
     },
