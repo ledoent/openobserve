@@ -61,7 +61,42 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </div>
     </div>
     <div class="tw:w-full">
-      <div class="card-container" style="height: calc(100vh - var(--navbar-height) - 92px)">
+      <div
+        v-if="isMobile"
+        class="card-container mobile-user-list-wrap"
+      >
+        <PullToRefreshWrapper
+          class="mobile-user-list-scroll"
+          @refresh="onMobileRefresh"
+        >
+          <div
+            v-if="visibleRows.length === 0"
+            class="mobile-user-list-empty"
+          >
+            <NoData />
+          </div>
+          <div v-else class="mobile-user-list">
+            <MobileUserCard
+              v-for="row in visibleRows"
+              :key="row.email"
+              :row="row"
+              @click="
+                row.enableEdit && row.status !== 'pending'
+                  ? addRoutePush({ row })
+                  : null
+              "
+              @edit="addRoutePush({ row: $event })"
+              @delete="confirmDeleteAction({ row: $event })"
+              @revoke="confirmRevokeAction({ row: $event })"
+            />
+          </div>
+        </PullToRefreshWrapper>
+      </div>
+      <div
+        v-else
+        class="card-container"
+        style="height: calc(100vh - var(--navbar-height) - 92px)"
+      >
         <q-table
           ref="qTable"
           :rows="visibleRows"
@@ -323,6 +358,9 @@ import NoData from "@/components/shared/grid/NoData.vue";
 import organizationsService from "@/services/organizations";
 import segment from "@/services/segment_analytics";
 import MemberInvitation from "@/components/iam/users/MemberInvitation.vue";
+import MobileUserCard from "@/components/iam/users/MobileUserCard.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import { useScreen } from "@/composables/useScreen";
 import {
   getImageURL,
   verifyOrganizationStatus,
@@ -343,6 +381,8 @@ export default defineComponent({
     NoData,
     AddUser,
     MemberInvitation,
+    MobileUserCard,
+    PullToRefreshWrapper,
   },
   emits: [
     "updated:fields",
@@ -356,6 +396,7 @@ export default defineComponent({
     const router = useRouter();
     const { t } = useI18n();
     const $q = useQuasar();
+    const { isMobile } = useScreen();
     const resultTotal = ref<number>(0);
     const showUpdateUserDialog: any = ref(false);
     const showAddUserDialog: any = ref(false);
@@ -897,6 +938,15 @@ export default defineComponent({
       deleteUserEmail = props.row.email;
     };
 
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await getOrgMembers();
+        updateUserActions();
+      } finally {
+        ack();
+      }
+    };
+
     const deleteUser = async () => {
       usersService
         .delete(store.state.selectedOrganization.identifier, deleteUserEmail)
@@ -1192,6 +1242,8 @@ export default defineComponent({
       confirmBulkDelete,
       openBulkDeleteDialog,
       bulkDeleteUsers,
+      isMobile,
+      onMobileRefresh,
       // showAddUserBtn,
     };
   },
@@ -1268,6 +1320,23 @@ export default defineComponent({
         width: 100%;
       }
     }
+  }
+
+  .mobile-user-list-wrap {
+    border: none;
+    padding: 12px;
+    height: calc(100vh - var(--navbar-height) - 120px);
+  }
+  .mobile-user-list-scroll {
+    height: 100%;
+    overflow-y: auto;
+  }
+  .mobile-user-list {
+    padding-bottom: 16px;
+  }
+  .mobile-user-list-empty {
+    padding: 32px 16px;
+    text-align: center;
   }
 }
 </style>
