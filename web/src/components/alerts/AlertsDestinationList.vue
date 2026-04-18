@@ -55,7 +55,56 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           />
           </div>
       </div>
+      <div
+        v-if="useCardLayout"
+        class="card-container mobile-destination-list-wrap"
+      >
+        <PullToRefreshWrapper
+          class="mobile-destination-list-scroll"
+          @refresh="onMobileRefresh"
+        >
+          <div
+            v-if="!templates.length && visibleRows.length === 0"
+            class="mobile-destination-list-empty"
+          >
+            <div class="q-mb-md">
+              It looks like you haven't created any Templates yet. To create an
+              Alert, you'll need at least one Destination and one Template in
+              place.
+            </div>
+            <q-btn
+              label="Create Template"
+              size="md"
+              color="primary"
+              no-caps
+              style="border-radius: 4px"
+              @click="routeTo('alertTemplates')"
+            />
+          </div>
+          <div
+            v-else-if="visibleRows.length === 0"
+            class="mobile-destination-list-empty"
+          >
+            <span>No destinations yet</span>
+          </div>
+          <div v-else class="mobile-destination-list">
+            <MobileDestinationCard
+              v-for="row in visibleRows"
+              :key="row.name"
+              :row="row"
+              :type-label="
+                getPrebuiltTypeName(row) || getCustomDestinationLabel(row)
+              "
+              @click="(r: any) => editDestination(r)"
+              @edit="(r: any) => editDestination(r)"
+              @export="(r: any) => exportDestination(r)"
+              @delete="(r: any) => conformDeleteDestination(r)"
+            />
+          </div>
+        </PullToRefreshWrapper>
+      </div>
       <q-table
+        v-else
         data-test="alert-destinations-list-table"
         ref="qTable"
         :rows="visibleRows"
@@ -301,6 +350,8 @@ import ImportDestination from "./ImportDestination.vue";
 import useActions from "@/composables/useActions";
 import { useReo } from "@/services/reodotdev_analytics";
 import { outlinedDelete } from "@quasar/extras/material-icons-outlined";
+import PullToRefreshWrapper from "../shared/PullToRefreshWrapper.vue";
+import MobileDestinationCard from "./MobileDestinationCard.vue";
 
 interface ConformDelete {
   visible: boolean;
@@ -314,6 +365,8 @@ export default defineComponent({
     ConfirmDialog,
     QTablePagination,
     ImportDestination,
+    PullToRefreshWrapper,
+    MobileDestinationCard,
   },
   setup() {
     const qTable = ref();
@@ -447,7 +500,7 @@ export default defineComponent({
         spinner: true,
         message: "Please wait while loading destinations...",
       });
-      destinationService
+      return destinationService
         .list({
           page_num: 1,
           page_size: 100000,
@@ -668,6 +721,17 @@ export default defineComponent({
     });
     const hasVisibleRows = computed(() => visibleRows.value.length > 0);
 
+    // Use cards (and bottom nav) up to the md breakpoint (<1024 px) so tablets
+    // also escape the desktop q-table layout.
+    const useCardLayout = computed(() => q.screen.lt.md);
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await getDestinations();
+      } finally {
+        ack();
+      }
+    };
+
     const openBulkDeleteDialog = () => {
       confirmBulkDelete.value = true;
     };
@@ -807,7 +871,35 @@ export default defineComponent({
       selectedDestinations,
       getPrebuiltTypeName,
       getCustomDestinationLabel,
+      useCardLayout,
+      onMobileRefresh,
     };
   },
 });
 </script>
+
+<style scoped lang="scss">
+@media (max-width: 1023px) {
+  .mobile-destination-list-wrap {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-destination-list-scroll {
+    height: calc(100vh - var(--navbar-height) - 92px - var(--o2-mobile-nav-height, 0px));
+  }
+
+  .mobile-destination-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px;
+  }
+
+  .mobile-destination-list-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--o2-text-secondary);
+  }
+}
+</style>
