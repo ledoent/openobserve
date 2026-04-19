@@ -38,11 +38,19 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Free runner disk
+      - name: Free runner disk + add swap
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
           sudo rm -rf /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
           docker system prune -af || true
+          # Rust link-time peaks exceed the 16 GB runner; add 16 GB swap.
+          sudo swapoff -a || true
+          sudo rm -f /mnt/swapfile /swapfile || true
+          sudo fallocate -l 16G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -h
           df -h
 
       - uses: actions/checkout@v5
