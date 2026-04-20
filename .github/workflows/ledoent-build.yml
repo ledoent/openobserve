@@ -7,8 +7,8 @@ name: ledoent build (review image)
 # Strategy mirrors upstream build-pr-image.yml: compile Rust on the runner
 # (using Swatinem/rust-cache for iteration speed), build the frontend with
 # Node, then assemble a thin Dockerfile.pr image that just COPYs the binary.
-# Fitting the full multi-stage Dockerfile.tag.amd64 into a 16 GB runner was
-# OOM-killing at link time even with swap.
+# Runs on ubicloud-standard-8 (native amd64, 8 vCPU / 32 GB) — ubuntu-latest
+# (16 GB) could not link the final openobserve binary.
 #
 # Consumed by ledoent/infra deployments/openobserve/values-ledoweb.yaml for
 # the observe-review.ledoweb.com side-by-side review deployment. Prod is
@@ -39,25 +39,11 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-8
     permissions:
       id-token: write
       contents: read
     steps:
-      - name: Free runner disk + add swap
-        run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
-          sudo rm -rf /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
-          docker system prune -af || true
-          sudo swapoff -a || true
-          sudo rm -f /mnt/swapfile /swapfile || true
-          sudo fallocate -l 16G /mnt/swapfile
-          sudo chmod 600 /mnt/swapfile
-          sudo mkswap /mnt/swapfile
-          sudo swapon /mnt/swapfile
-          free -h
-          df -h
-
       - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.ref }}
@@ -93,12 +79,10 @@ jobs:
         run: cd web && npm ci && NODE_OPTIONS="--max-old-space-size=8192" npm run build
 
       - name: Build binary
-        env:
-          CARGO_BUILD_JOBS: '2'
         run: |
-          # Plain --release (no LTO, codegen-units=16, strip=true). release-prod
-          # and release-profiling both peak the linker past the ~16 GB ceiling on
-          # ubuntu-latest. Slightly slower runtime but fine for a review build.
+          # Plain --release (no LTO, codegen-units=16, strip=true). Slightly
+          # slower runtime than release-prod but fine for a review build and
+          # keeps link-time memory well under the 32 GB Ubicloud ceiling.
           cargo build --features mimalloc --release --target x86_64-unknown-linux-gnu
           mkdir -p bin
           mv target/x86_64-unknown-linux-gnu/release/openobserve bin/openobserve
