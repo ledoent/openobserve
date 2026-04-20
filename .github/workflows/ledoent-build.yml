@@ -96,10 +96,15 @@ jobs:
         env:
           CARGO_BUILD_JOBS: '2'
         run: |
-          cargo build --features mimalloc --profile release-profiling --target x86_64-unknown-linux-gnu
+          # Plain --release (no LTO, codegen-units=16, strip=true). release-prod
+          # and release-profiling both peak the linker past the ~16 GB ceiling on
+          # ubuntu-latest. Slightly slower runtime but fine for a review build.
+          cargo build --features mimalloc --release --target x86_64-unknown-linux-gnu
           mkdir -p bin
-          mv target/x86_64-unknown-linux-gnu/release-profiling/openobserve bin/openobserve
+          mv target/x86_64-unknown-linux-gnu/release/openobserve bin/openobserve
           ls -lh bin/openobserve
+          free -h
+          df -h
 
       - id: auth
         uses: google-github-actions/auth@v2
