@@ -52,7 +52,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           />
         </div>
       </div>
+      <div v-if="isMobile" class="mobile-template-list-wrap">
+        <PullToRefreshWrapper
+          class="mobile-template-list-scroll"
+          @refresh="onMobileRefresh"
+        >
+          <div
+            v-if="visibleRows.length === 0"
+            class="mobile-template-list-empty"
+          >
+            <NoData />
+          </div>
+          <div v-else class="mobile-template-list">
+            <MobileTemplateCard
+              v-for="row in visibleRows"
+              :key="row.name"
+              :row="row"
+              @click="editTemplate($event)"
+              @edit="editTemplate($event)"
+              @export="exportTemplate($event)"
+              @delete="conformDeleteDestination($event)"
+            />
+          </div>
+        </PullToRefreshWrapper>
+      </div>
       <q-table
+        v-else
         data-test="alert-templates-list-table"
         ref="qTableRef"
         :rows="visibleRows"
@@ -216,6 +241,9 @@ import { outlinedDelete } from "@quasar/extras/material-icons-outlined";
 import ImportTemplate from "./ImportTemplate.vue";
 import QTablePagination from "@/components/shared/grid/Pagination.vue";
 import { useReo } from "@/services/reodotdev_analytics";
+import MobileTemplateCard from "./MobileTemplateCard.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import { useScreen } from "@/composables/useScreen";
 
 const AddTemplate = defineAsyncComponent(
   () => import("@/components/alerts/AddTemplate.vue"),
@@ -225,7 +253,16 @@ const store = useStore();
 const { t } = useI18n();
 const router = useRouter();
 const q = useQuasar();
+const { isMobile } = useScreen();
 const { track } = useReo();
+
+const onMobileRefresh = async (ack: () => void) => {
+  try {
+    getTemplates();
+  } finally {
+    ack();
+  }
+};
 const templates: Ref<Template[]> = ref([]);
 const columns: any = ref<QTableProps["columns"]>([
   {
@@ -528,4 +565,22 @@ const bulkDeleteTemplates = () => {
       }
     });
 };</script>
-<style lang=""></style>
+<style lang="scss" scoped>
+@media (max-width: 599px) {
+  .mobile-template-list-wrap {
+    padding: 12px;
+    height: calc(100vh - var(--navbar-height) - 120px);
+  }
+  .mobile-template-list-scroll {
+    height: 100%;
+    overflow-y: auto;
+  }
+  .mobile-template-list {
+    padding-bottom: 16px;
+  }
+  .mobile-template-list-empty {
+    padding: 32px 16px;
+    text-align: center;
+  }
+}
+</style>

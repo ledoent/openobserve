@@ -56,7 +56,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       />
     </q-header>
 
+    <!-- Desktop sidebar navigation (hidden on mobile) -->
     <q-drawer
+      v-if="!isMobile"
       v-model="drawer"
       show-if-above
       :width="84"
@@ -80,8 +82,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <!-- Left Panel -->
       <div
         class="col"
+        :class="{ 'mobile-content-clearance': isMobile }"
         v-show="isLoading"
-        :style="{ width: store.state.isAiChatEnabled ? '75%' : '100%' }"
+        :style="{
+          width:
+            !isMobile && store.state.isAiChatEnabled ? '75%' : '100%',
+        }"
         :key="store.state.selectedOrganization?.identifier"
       >
         <q-page-container v-if="isLoading">
@@ -91,8 +97,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </q-page-container>
       </div>
 
-      <!-- Right Panel (AI Chat - unified for both general and context-specific usage) -->
+      <!-- Desktop: Right Panel (AI Chat side panel) -->
       <div
+        v-if="!isMobile"
         class="col-auto"
         v-show="store.state.isAiChatEnabled && isLoading"
         style="
@@ -118,6 +125,41 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         />
       </div>
     </div>
+
+    <!-- Mobile: AI Chat as bottom sheet overlay -->
+    <q-dialog
+      v-if="isMobile"
+      :model-value="store.state.isAiChatEnabled"
+      @update:model-value="(val) => !val && closeChat()"
+      position="bottom"
+      full-width
+      transition-show="slide-up"
+      transition-hide="slide-down"
+      aria-label="AI Chat"
+    >
+      <q-card style="height: 85vh; border-radius: 12px 12px 0 0">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1 text-weight-medium">AI Chat</div>
+          <q-space />
+          <q-btn icon="close" flat round dense @click="closeChat" />
+        </q-card-section>
+        <q-card-section
+          class="col q-pt-none"
+          style="height: calc(100% - 52px); overflow: hidden"
+        >
+          <O2AIChat
+            :header-height="0"
+            :is-open="store.state.isAiChatEnabled"
+            @close="closeChat"
+            :aiChatInputContext="aiChatInputContext"
+            :appendMode="aiChatAppendMode"
+          />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Mobile bottom navigation -->
+    <MobileBottomNav v-if="isMobile" :links="linksList" />
 
     <q-dialog v-model="showGetStarted"
 maximized full-height>
@@ -163,6 +205,7 @@ import {
 import {
   ref,
   defineComponent,
+  defineAsyncComponent,
   KeepAlive,
   computed,
   onMounted,
@@ -212,9 +255,11 @@ import organizations from "@/services/organizations";
 import useStreams from "@/composables/useStreams";
 import { openobserveRum } from "@openobserve/browser-rum";
 import useSearchWebSocket from "@/composables/useSearchWebSocket";
-import O2AIChat from "@/components/O2AIChat.vue";
+const O2AIChat = defineAsyncComponent(() => import("@/components/O2AIChat.vue"));
 import WebinarBanner from "@/components/WebinarBanner.vue";
 import useRoutePrefetch from "@/composables/useRoutePrefetch";
+import { useScreen } from "@/composables/useScreen";
+import MobileBottomNav from "@/components/MobileBottomNav.vue";
 
 let mainLayoutMixin: any = null;
 if (config.isCloud == "true") {
@@ -254,6 +299,7 @@ export default defineComponent({
     PredefinedThemes,
     O2AIChat,
     GetStarted,
+    MobileBottomNav,
   },
   methods: {
     navigateToDocs() {
@@ -319,11 +365,13 @@ export default defineComponent({
     const zoBackendUrl = store.state.API_ENDPOINT;
     const isLoading = ref(false);
 
+    const { isMobile } = useScreen();
     const { getStreams, resetStreams } = useStreams();
     const { closeSocket } = useSearchWebSocket();
     const { isOpen: isPredefinedThemesOpen, toggleThemes } =
       usePredefinedThemes();
     const { prefetchRoute } = useRoutePrefetch();
+    const drawer = ref(true);
 
     const isMonacoEditorLoaded = ref(false);
     const showGetStarted = ref(
@@ -1153,6 +1201,8 @@ export default defineComponent({
       router,
       store,
       config,
+      isMobile,
+      drawer,
       langList,
       selectedLanguage,
       linksList,

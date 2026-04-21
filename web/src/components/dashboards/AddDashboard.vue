@@ -57,6 +57,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           hide-bottom-space
           borderless
           dense
+          autocomplete="off"
+          enterkeyhint="next"
           :rules="[(val: any) => !!val.trim() || t('dashboard.nameRequired')]"
           :lazy-rules="true"
         />
@@ -69,6 +71,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           class="showLabelOnTop"
           stack-label
           dense
+          autocomplete="off"
+          enterkeyhint="next"
           data-test="add-dashboard-description"
         />
 
