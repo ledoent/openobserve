@@ -28,6 +28,11 @@ export function usePullToRefresh(
   // threshold (iOS Messages / Mail behavior). Don't fire on release — the
   // feedback is most useful as confirmation that the refresh is armed.
   let thresholdCrossed = false;
+  // Guard the post-await ref writes: a parent may destroy the wrapper while
+  // `onRefresh` is still in flight (navigation, route change). The refs are
+  // still reactive — we just skip the redundant mutation to avoid appearing
+  // to "finish" a gesture on a detached component.
+  let unmounted = false;
 
   const resetPull = () => {
     pullDistance.value = 0;
@@ -73,15 +78,18 @@ export function usePullToRefresh(
       try {
         await options.onRefresh();
       } catch (err) {
-        // Surface as unhandled rejection rather than swallowing silently —
-        // but only after the UI has reset. Callers own error UX.
-        queueMicrotask(() => {
-          throw err;
-        });
+        // Callers own error UX (they control the data fetch that backs
+        // `onRefresh`). Log for diagnostics rather than re-throwing into a
+        // microtask, which surfaces as an uncaught exception with no stack
+        // context for the original caller.
+        // eslint-disable-next-line no-console
+        console.error("[usePullToRefresh] onRefresh rejected:", err);
       } finally {
-        isRefreshing.value = false;
-        pullDistance.value = 0;
-        thresholdCrossed = false;
+        if (!unmounted) {
+          isRefreshing.value = false;
+          pullDistance.value = 0;
+          thresholdCrossed = false;
+        }
       }
     } else {
       pullDistance.value = 0;
@@ -123,6 +131,7 @@ export function usePullToRefresh(
   });
 
   onBeforeUnmount(() => {
+    unmounted = true;
     if (attached) detach(attached);
     attached = null;
   });
