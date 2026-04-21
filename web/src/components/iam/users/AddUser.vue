@@ -201,7 +201,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               dense
               borderless
               hide-bottom-space
-              autocomplete="current-password"
+              :autocomplete="
+                store.state.userInfo.email === formData.email
+                  ? 'current-password'
+                  : 'off'
+              "
               enterkeyhint="next"
               :rules="[
                 (val: any) => !!val || 'Field is required',

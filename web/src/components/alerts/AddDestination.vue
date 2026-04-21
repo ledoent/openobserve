@@ -446,7 +446,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             borderless
             dense
             inputmode="email"
-            autocomplete="email"
+            autocomplete="off"
             enterkeyhint="done"
             :rules="[
               (val: any) =>
