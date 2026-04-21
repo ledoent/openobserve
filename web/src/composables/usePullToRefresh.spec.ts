@@ -11,6 +11,14 @@ vi.mock("./useScreen", () => ({
   }),
 }));
 
+const vibrateSpy = vi.fn();
+vi.mock("./useHaptics", () => ({
+  useHaptics: () => ({
+    vibrate: vibrateSpy,
+    supportsVibrate: { value: true },
+  }),
+}));
+
 const makeTouch = (clientY: number): any => ({
   clientY,
   clientX: 0,
@@ -55,6 +63,7 @@ const mountHarness = (onRefresh: () => Promise<unknown>) => {
 describe("usePullToRefresh", () => {
   beforeEach(() => {
     isMobileRef.value = true;
+    vibrateSpy.mockReset();
   });
 
   it("fires onRefresh when pull distance exceeds threshold", async () => {
@@ -112,6 +121,41 @@ describe("usePullToRefresh", () => {
     await nextTick();
 
     expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it("fires haptic impact exactly once when threshold is crossed", async () => {
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const w = mountHarness(onRefresh);
+    const el = w.element as HTMLElement;
+    Object.defineProperty(el, "scrollTop", { value: 0, configurable: true });
+
+    fireTouch(el, "touchstart", 100);
+    // Below threshold — no haptic yet.
+    fireTouch(el, "touchmove", 180);
+    expect(vibrateSpy).not.toHaveBeenCalled();
+    // Cross threshold — single impact.
+    fireTouch(el, "touchmove", 260);
+    expect(vibrateSpy).toHaveBeenCalledTimes(1);
+    expect(vibrateSpy).toHaveBeenCalledWith("impact");
+    // Keep pulling past threshold — must not re-fire within the gesture.
+    fireTouch(el, "touchmove", 320);
+    expect(vibrateSpy).toHaveBeenCalledTimes(1);
+    fireTouch(el, "touchend", 320);
+    await nextTick();
+  });
+
+  it("does not fire haptic when pull is released below threshold", async () => {
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const w = mountHarness(onRefresh);
+    const el = w.element as HTMLElement;
+    Object.defineProperty(el, "scrollTop", { value: 0, configurable: true });
+
+    fireTouch(el, "touchstart", 100);
+    fireTouch(el, "touchmove", 140);
+    fireTouch(el, "touchend", 140);
+    await nextTick();
+
+    expect(vibrateSpy).not.toHaveBeenCalled();
   });
 
   it("does not fire onRefresh while a previous refresh is in-flight", async () => {

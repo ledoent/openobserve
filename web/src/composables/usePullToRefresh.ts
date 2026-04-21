@@ -3,6 +3,7 @@
 
 import { ref, watch, onMounted, onBeforeUnmount, type Ref } from "vue";
 import { useScreen } from "./useScreen";
+import { useHaptics } from "./useHaptics";
 
 export interface PullToRefreshOptions {
   threshold?: number;
@@ -14,6 +15,7 @@ export function usePullToRefresh(
   options: PullToRefreshOptions,
 ) {
   const { isMobile } = useScreen();
+  const { vibrate } = useHaptics();
   const threshold = options.threshold ?? 70;
 
   const pullDistance = ref(0);
@@ -22,12 +24,17 @@ export function usePullToRefresh(
 
   let startY = 0;
   let pulling = false;
+  // Fire haptic exactly once per gesture, the instant the pull crosses the
+  // threshold (iOS Messages / Mail behavior). Don't fire on release — the
+  // feedback is most useful as confirmation that the refresh is armed.
+  let thresholdCrossed = false;
 
   const resetPull = () => {
     pullDistance.value = 0;
     isPulling.value = false;
     pulling = false;
     startY = 0;
+    thresholdCrossed = false;
   };
 
   const onTouchStart = (e: TouchEvent) => {
@@ -48,6 +55,10 @@ export function usePullToRefresh(
     }
     isPulling.value = true;
     pullDistance.value = Math.min(delta * 0.5, threshold * 1.5);
+    if (!thresholdCrossed && pullDistance.value >= threshold) {
+      thresholdCrossed = true;
+      vibrate("impact");
+    }
     if (e.cancelable) e.preventDefault();
   };
 
@@ -70,9 +81,11 @@ export function usePullToRefresh(
       } finally {
         isRefreshing.value = false;
         pullDistance.value = 0;
+        thresholdCrossed = false;
       }
     } else {
       pullDistance.value = 0;
+      thresholdCrossed = false;
     }
   };
 
