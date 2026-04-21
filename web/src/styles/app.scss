@@ -2204,6 +2204,14 @@ body {
   min-width: var(--o2-touch-target-min);
 }
 
+// Forces a 44px hit surface on visually-dense controls (q-btn dense size="sm",
+// etc.) so mis-taps don't fall through to the parent card. Visual density is
+// preserved — only the interactive surface grows.
+.mobile-tap-target {
+  min-height: var(--o2-touch-target-min) !important;
+  min-width: var(--o2-touch-target-min) !important;
+}
+
 // Safe area inset support (iOS notch, home indicator)
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .safe-area-bottom {

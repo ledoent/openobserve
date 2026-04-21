@@ -265,8 +265,8 @@ export default defineComponent({
 
   &__more {
     flex-shrink: 0;
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   &__subtitle {
