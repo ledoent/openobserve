@@ -1163,6 +1163,7 @@ export default defineComponent({
       });
     };
     const dashboardList = ref([]);
+    const loading = ref(false);
     const onMobileRefresh = async (ack: () => void) => {
       try {
         await getDashboards();
@@ -1171,6 +1172,7 @@ export default defineComponent({
       }
     };
     const getDashboards = async () => {
+      loading.value = true;
       const dismiss = $q.notify({
         spinner: true,
         message: "Please wait while loading dashboards...",
@@ -1185,6 +1187,7 @@ export default defineComponent({
         showErrorNotification(err?.message || "Failed to load dashboards.");
       } finally {
         dismiss();
+        loading.value = false;
       }
     };
 
@@ -1551,7 +1554,7 @@ export default defineComponent({
       store,
       orgData,
       router,
-      loading: ref(false),
+      loading,
       dashboards,
       dashboard,
       columns,
