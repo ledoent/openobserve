@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       }"
       :aria-label="item.title"
       :aria-current="isItemActive(item) ? 'page' : undefined"
+      @click="onTabClick(item)"
     >
       <q-icon :name="item.icon" size="22px" />
       <span class="mobile-bottom-nav__label">{{ item.title }}</span>
@@ -43,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <button
       class="mobile-bottom-nav__item"
       :class="{ 'mobile-bottom-nav__item--active': showMoreSheet }"
-      @click="showMoreSheet = true"
+      @click="onMoreClick"
       aria-label="More navigation options"
       :aria-expanded="String(showMoreSheet)"
     >
@@ -74,6 +75,7 @@ import { defineComponent, computed, ref, type PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import MenuLink from "./MenuLink.vue";
+import { useHaptics } from "@/composables/useHaptics";
 
 interface NavItem {
   title: string;
@@ -99,6 +101,7 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const router = useRouter();
+    const { vibrate } = useHaptics();
     const showMoreSheet = ref(false);
 
     const orgIdentifier = computed(
@@ -126,12 +129,26 @@ export default defineComponent({
       return path.startsWith(item.link);
     };
 
+    const onTabClick = (item: NavItem) => {
+      // Skip haptic on the already-active tab — re-tap shouldn't feel like a
+      // fresh navigation.
+      if (isItemActive(item)) return;
+      vibrate("selection");
+    };
+
+    const onMoreClick = () => {
+      vibrate("selection");
+      showMoreSheet.value = true;
+    };
+
     return {
       primaryItems,
       overflowItems,
       showMoreSheet,
       orgIdentifier,
       isItemActive,
+      onTabClick,
+      onMoreClick,
     };
   },
 });
