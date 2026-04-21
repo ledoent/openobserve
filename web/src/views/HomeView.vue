@@ -14,7 +14,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 <template>
-  <q-page class="tw:px-[0.625rem] q-pt-xs" style="overflow: hidden; min-height: unset; height: calc(100vh - 40px);" :class="store.state.isAiChatEnabled ? 'ai-enabled-home-view q-pb-sm' : ''">
+  <q-page class="tw:px-[0.625rem] q-pt-xs mobile-content-clearance" style="overflow: hidden; min-height: unset; height: calc(100vh - 40px);" :class="store.state.isAiChatEnabled ? 'ai-enabled-home-view q-pb-sm' : ''">
     <div v-if="!no_data_ingest && !isLoadingSummary" class="tw:w-full tw:px-[0.625rem] tw:py-[0.625rem] tw:overflow-y-auto card-container" :class="store.state.isAiChatEnabled ? 'tw:h-[calc(100% - 40px)]' : 'tw:h-full'" style="display: flex; flex-direction: column; ">
         <!-- 1st section -->
          <div>
@@ -326,7 +326,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 </div>
               </div>
             </div>
-            <div class="custom-first-chart tw:my-auto xl:tw:min-h-[200px] tw:h-[calc(100vh-500px)]  md:tw:h-[calc(100vh-500px)] lg:tw:h-[calc(100vh-550px)] xl:tw:h-[calc(100vh-645px)] tw:w-full"  >
+            <div class="custom-first-chart tw:my-auto xl:tw:min-h-[200px] tw:h-[200px] md:tw:h-[calc(100vh-500px)] lg:tw:h-[calc(100vh-550px)] xl:tw:h-[calc(100vh-645px)] tw:w-full"  >
               <CustomChartRenderer
                 :key="alertsPanelDataKey"
                 :data="alertsPanelData"
@@ -374,7 +374,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 </div>
               </div>
             </div>
-            <div class="custom-second-chart tw:my-auto xl:tw:min-h-[200px] tw:h-[calc(100vh-500px)]  md:tw:h-[calc(100vh-500px)] lg:tw:h-[calc(100vh-550px)] xl:tw:h-[calc(100vh-645px)]"  >
+            <div class="custom-second-chart tw:my-auto xl:tw:min-h-[200px] tw:h-[200px] md:tw:h-[calc(100vh-500px)] lg:tw:h-[calc(100vh-550px)] xl:tw:h-[calc(100vh-645px)]"  >
               <CustomChartRenderer
                 :key="pipelinesPanelDataKey"
                 :data="pipelinesPanelData"

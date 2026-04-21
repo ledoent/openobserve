@@ -20,9 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     class="logs-search-bar-component"
     id="searchBarComponent"
   >
-    <div class="row tw:m-0! tw:p-[0.375rem]! tw:items-start!">
+    <div class="row tw:m-0! tw:p-[0.375rem]! tw:items-start!" :class="{ 'search-bar-mobile': isMobile }">
       <div class="float-right col flex tw:flex-wrap tw:items-center tw:gap-y-1">
-        <div class="button-group logs-visualize-toggle element-box-shadow">
+        <div v-if="!shouldCollapseAllToMenu" class="button-group logs-visualize-toggle element-box-shadow">
           <div class="row">
             <div>
               <q-btn
@@ -214,6 +214,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           clearable
                           debounce="1"
                           class="tw:mx-2 tw:my-2"
+                          type="search"
+                          inputmode="search"
+                          autocomplete="off"
+                          enterkeyhint="search"
                           :placeholder="t('search.searchSavedView')"
                         >
                           <template #prepend>
@@ -948,6 +952,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   class="tw:mb-[0.375rem]! indexlist-search-input q-mx-sm q-mt-sm"
                   v-model="regionFilter"
                   :label="t('search.regionFilterMsg')"
+                  type="search"
+                  inputmode="search"
+                  autocomplete="off"
+                  enterkeyhint="search"
                 >
                 </q-input>
                 <q-tree
@@ -1647,6 +1655,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             outlined
             filled
             dense
+            inputmode="numeric"
+            enterkeyhint="next"
             tabindex="0"
             min="1"
           />
@@ -1725,6 +1735,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               stack-label
               borderless
               dense
+              autocomplete="off"
+              enterkeyhint="done"
               :rules="[
                 (val) => !!val.trim() || 'This field is required',
                 (val) =>
@@ -1816,6 +1828,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               stack-label
               borderless
               dense
+              autocomplete="off"
+              enterkeyhint="done"
               :rules="[
                 (val) => !!val.trim() || 'This field is required',
                 (val) =>
@@ -1905,6 +1919,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               stack-label
               borderless
               dense
+              inputmode="numeric"
+              enterkeyhint="done"
               tabindex="0"
               min="100"
             />
@@ -1967,6 +1983,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             borderless
             dense
             autofocus
+            autocomplete="off"
+            enterkeyhint="done"
             data-test="search-inspect-trace-id-input"
           />
         </q-card-section>
@@ -2075,6 +2093,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                         clearable
                         debounce="300"
                         class="tw:mx-2 tw:my-2"
+                        type="search"
+                        inputmode="search"
+                        autocomplete="off"
+                        enterkeyhint="search"
                         :placeholder="t('search.searchSavedView')"
                       >
                         <template #prepend>
@@ -2309,6 +2331,7 @@ import { useStore } from "vuex";
 import { useQuasar, copyToClipboard, is, QTooltip } from "quasar";
 
 import DateTime from "@/components/DateTime.vue";
+import { useScreen } from "@/composables/useScreen";
 import ShareButton from "@/components/common/ShareButton.vue";
 import useLogs from "@/composables/useLogs";
 import useStreams from "@/composables/useStreams";
@@ -2764,6 +2787,8 @@ export default defineComponent({
     const hasInteractedWithAI = ref(false); // Track if user has used AI in non-NLP mode
     const isNaturalLanguageDetected = ref(false); // Track NL detection without switching modes
 
+    const { isMobile } = useScreen();
+
     // Track window width for responsive toolbar layout
     const windowWidth = ref(window.innerWidth);
     const onWindowResize = () => {
@@ -2781,6 +2806,8 @@ export default defineComponent({
       () => windowWidth.value <= 1280,
     );
     const shouldMoveShareToMenu = computed(() => windowWidth.value <= 1100);
+    // <= 768px: collapse mode toggles + all remaining toolbar items
+    const shouldCollapseAllToMenu = computed(() => windowWidth.value <= 768);
     const vrlEditorNlpMode = ref(false); // Track VRL editor's AI mode
 
     const confirmUpdate = ref(false);
@@ -5357,6 +5384,8 @@ export default defineComponent({
       shouldMoveSavedViewToMenu,
       shouldMoveSqlToggleToMenu,
       shouldMoveShareToMenu,
+      shouldCollapseAllToMenu,
+      isMobile,
     };
   },
   computed: {
@@ -5765,6 +5794,14 @@ export default defineComponent({
   /* subtle default glow */
   // box-shadow: 0 0 8px color-mix(in srgb, var(--o2-primary-btn-bg), transparent 60%);
 }
+
+@media (max-width: 599px) {
+  .o2-run-query-button.mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
 .o2-color-primary {
   background-color: var(--o2-primary-btn-bg);
   color: var(--o2-primary-btn-text);
