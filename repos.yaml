@@ -1,0 +1,28 @@
+# git-aggregator config — source for the weekly `build/deploy` refresh.
+#
+# Consumed by `.github/workflows/aggregate-deploy.yml` (runs on cron from the
+# `ledoent` branch). For local / manual runs from a fresh checkout of
+# `ledoent`:
+#
+#   pip install git-aggregator
+#   gitaggregate -c repos.yaml -p     # merge + push to fork build/deploy
+#
+# Merge order (top-down):
+#   1. `fork main` — strict upstream mirror, updated daily by
+#      `sync-upstream.yml`. Forms the base tree.
+#   2. `fork ledoent` — this branch (CI, repos.yaml, dev-proxy chore).
+#   3. `fork mobile-ui-upstream` — PR #3 feature branch (mobile UX).
+#
+# The push to `build/deploy` triggers `ledoent-build.yml`, which produces
+# `v0.70.0-mobile-<shortsha>` in GAR. Milestone tags (e.g. `-r2`) are cut
+# manually via `workflow_dispatch` on `ledoent-build.yml`.
+
+./aggregated:
+  remotes:
+    upstream: https://github.com/openobserve/openobserve.git
+    fork: https://github.com/ledoent/openobserve.git
+  merges:
+    - fork main
+    - fork ledoent
+    - fork mobile-ui-upstream
+  target: fork build/deploy
