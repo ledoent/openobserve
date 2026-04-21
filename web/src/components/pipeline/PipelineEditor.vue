@@ -31,6 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               dense
               hide-bottom-space
               class="tw:w-[300px]"
+              autocomplete="off"
+              enterkeyhint="done"
               :error="pipelineNameError"
               :error-message="pipelineNameErrorMessage"
             />

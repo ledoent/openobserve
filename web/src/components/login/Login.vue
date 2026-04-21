@@ -137,6 +137,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               placeholder="Email"
               class="showLabelOnTop no-case"
               type="email"
+              inputmode="email"
+              autocomplete="email"
+              enterkeyhint="next"
               dense
               stack-label
               filled
@@ -151,6 +154,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               placeholder="Password"
               class="showLabelOnTop no-case"
               type="password"
+              autocomplete="current-password"
+              enterkeyhint="done"
               dense
               stack-label
               filled

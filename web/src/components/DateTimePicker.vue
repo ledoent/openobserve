@@ -98,6 +98,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   <q-input
                     v-model="data.selectedDate.relative.value"
                     type="number"
+                    inputmode="numeric"
+                    enterkeyhint="next"
                     dense
                     filled
                     min="1"
@@ -144,6 +146,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     dense
                     filled
                     mask="time"
+                    inputmode="numeric"
+                    enterkeyhint="next"
                     :rules="['time']"
                   >
                     <template #append>
@@ -175,6 +179,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     dense
                     filled
                     mask="time"
+                    inputmode="numeric"
+                    enterkeyhint="done"
                     :rules="['time']"
                   >
                     <template #append>
@@ -284,6 +290,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <q-input
                       v-model="data.selectedDate.relative.value"
                       type="number"
+                      inputmode="numeric"
+                      enterkeyhint="next"
                       dense
                       filled
                       min="1"
@@ -329,6 +337,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       dense
                       filled
                       mask="time"
+                      inputmode="numeric"
+                      enterkeyhint="next"
                       :rules="['time']"
                     >
                       <template #append>
@@ -360,6 +370,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       dense
                       filled
                       mask="time"
+                      inputmode="numeric"
+                      enterkeyhint="done"
                       :rules="['time']"
                     >
                       <template #append>

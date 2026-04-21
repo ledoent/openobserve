@@ -214,6 +214,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           clearable
                           debounce="1"
                           class="tw:mx-2 tw:my-2"
+                          type="search"
+                          inputmode="search"
+                          autocomplete="off"
+                          enterkeyhint="search"
                           :placeholder="t('search.searchSavedView')"
                         >
                           <template #prepend>
@@ -948,6 +952,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   class="tw:mb-[0.375rem]! indexlist-search-input q-mx-sm q-mt-sm"
                   v-model="regionFilter"
                   :label="t('search.regionFilterMsg')"
+                  type="search"
+                  inputmode="search"
+                  autocomplete="off"
+                  enterkeyhint="search"
                 >
                 </q-input>
                 <q-tree
@@ -1647,6 +1655,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             outlined
             filled
             dense
+            inputmode="numeric"
+            enterkeyhint="next"
             tabindex="0"
             min="1"
           />
@@ -1725,6 +1735,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               stack-label
               borderless
               dense
+              autocomplete="off"
+              enterkeyhint="done"
               :rules="[
                 (val) => !!val.trim() || 'This field is required',
                 (val) =>
@@ -1816,6 +1828,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               stack-label
               borderless
               dense
+              autocomplete="off"
+              enterkeyhint="done"
               :rules="[
                 (val) => !!val.trim() || 'This field is required',
                 (val) =>
@@ -1905,6 +1919,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               stack-label
               borderless
               dense
+              inputmode="numeric"
+              enterkeyhint="done"
               tabindex="0"
               min="100"
             />
@@ -1967,6 +1983,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             borderless
             dense
             autofocus
+            autocomplete="off"
+            enterkeyhint="done"
             data-test="search-inspect-trace-id-input"
           />
         </q-card-section>
@@ -2075,6 +2093,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                         clearable
                         debounce="300"
                         class="tw:mx-2 tw:my-2"
+                        type="search"
+                        inputmode="search"
+                        autocomplete="off"
+                        enterkeyhint="search"
                         :placeholder="t('search.searchSavedView')"
                       >
                         <template #prepend>

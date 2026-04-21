@@ -105,6 +105,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               stack-label
               borderless
               dense
+              autocomplete="off"
+              enterkeyhint="next"
               :rules="[
                 (val: any) =>
                   !!val
@@ -155,6 +157,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     hide-bottom-space
                     :placeholder="t('alert_destinations.api_header')"
                     dense
+                    autocomplete="off"
+                    enterkeyhint="next"
                     tabindex="0"
                   />
                 </div>
@@ -167,6 +171,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     borderless
                     hide-bottom-space
                     dense
+                    autocomplete="off"
+                    enterkeyhint="next"
                     tabindex="0"
                   />
                 </div>
@@ -263,6 +269,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             stack-label
             borderless
             dense
+            autocomplete="off"
+            enterkeyhint="next"
             :rules="[
               (val: any) =>
                 !!val
@@ -307,6 +315,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               borderless
               hide-bottom-space
               dense
+              type="url"
+              inputmode="url"
+              autocomplete="off"
+              enterkeyhint="next"
               :rules="[(val: any) => !!val.trim() || 'Field is required!']"
               tabindex="0"
             />
@@ -366,6 +378,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   hide-bottom-space
                   :placeholder="t('alert_destinations.api_header')"
                   dense
+                  autocomplete="off"
+                  enterkeyhint="next"
                   tabindex="0"
                 />
               </div>
@@ -379,6 +393,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   hide-bottom-space
                   dense
                   isUpdatingDestination
+                  autocomplete="off"
+                  enterkeyhint="next"
                   tabindex="0"
                 />
               </div>
@@ -429,6 +445,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             stack-label
             borderless
             dense
+            inputmode="email"
+            autocomplete="email"
+            enterkeyhint="done"
             :rules="[
               (val: any) =>
                 /^([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(\s*[;,]\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}))*$/.test(
