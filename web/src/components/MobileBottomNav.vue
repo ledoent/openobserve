@@ -231,6 +231,8 @@ export default defineComponent({
   // Match sidebar's backdrop-filter
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  // Keep the bottom row clear of the iPhone home indicator.
+  padding-bottom: env(safe-area-inset-bottom);
 
   &__handle {
     width: 36px;

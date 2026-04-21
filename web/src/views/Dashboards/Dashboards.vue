@@ -634,8 +634,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       v-bind="folderSheetDialogProps"
       aria-label="Folders"
     >
-      <q-card style="width: 85vw; max-width: 360px; height: 100%">
-        <div class="tw:h-full tw:flex tw:flex-col tw:p-[0.625rem]">
+      <q-card
+        class="mobile-folder-sheet"
+        style="width: 85vw; max-width: 360px; height: 100%"
+      >
+        <div class="mobile-folder-sheet__body tw:h-full tw:flex tw:flex-col tw:p-[0.625rem]">
           <div class="text-bold q-pa-sm tw:flex tw:items-center tw:justify-between">
             <span>{{ t("dashboard.folderLabel") }}</span>
             <q-btn
