@@ -69,8 +69,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           class="mobile-user-list-scroll"
           @refresh="onMobileRefresh"
         >
+          <MobileCardSkeleton
+            v-if="isInitialLoading && visibleRows.length === 0"
+            :count="5"
+            data-test="user-list-mobile-skeleton"
+          />
           <div
-            v-if="visibleRows.length === 0"
+            v-else-if="visibleRows.length === 0"
             class="mobile-user-list-empty"
           >
             <NoData />
@@ -360,6 +365,7 @@ import segment from "@/services/segment_analytics";
 import MemberInvitation from "@/components/iam/users/MemberInvitation.vue";
 import MobileUserCard from "@/components/iam/users/MobileUserCard.vue";
 import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import MobileCardSkeleton from "@/components/shared/MobileCardSkeleton.vue";
 import { useScreen } from "@/composables/useScreen";
 import {
   getImageURL,
@@ -383,6 +389,7 @@ export default defineComponent({
     MemberInvitation,
     MobileUserCard,
     PullToRefreshWrapper,
+    MobileCardSkeleton,
   },
   emits: [
     "updated:fields",
@@ -398,6 +405,7 @@ export default defineComponent({
     const $q = useQuasar();
     const { isMobile } = useScreen();
     const resultTotal = ref<number>(0);
+    const isInitialLoading = ref(true);
     const showUpdateUserDialog: any = ref(false);
     const showAddUserDialog: any = ref(false);
     const confirmDelete = ref<boolean>(false);
@@ -607,11 +615,12 @@ export default defineComponent({
             });
 
             dismiss();
-
+            isInitialLoading.value = false;
             resolve(true);
           })
           .catch(() => {
             dismiss();
+            isInitialLoading.value = false;
             reject(false);
           });
       });
@@ -1234,6 +1243,7 @@ export default defineComponent({
       shouldAllowChangeRole,
       shouldAllowDelete,
       fetchUserRoles,
+      isInitialLoading,
       visibleRows,
       hasVisibleRows,
       selectableRows,

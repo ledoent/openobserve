@@ -153,8 +153,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             class="mobile-pipeline-list-scroll"
             @refresh="onMobileRefresh"
           >
+            <MobileCardSkeleton
+              v-if="isInitialLoading && visibleRows.length === 0"
+              :count="5"
+              data-test="pipeline-list-mobile-skeleton"
+            />
             <div
-              v-if="visibleRows.length === 0"
+              v-else-if="visibleRows.length === 0"
               class="mobile-pipeline-list-empty"
             >
               <no-data />
@@ -633,6 +638,7 @@ import ResumePipelineDialog from "../ResumePipelineDialog.vue";
 import CreateBackfillJobDialog from "@/components/pipelines/CreateBackfillJobDialog.vue";
 import MobilePipelineCard from "./MobilePipelineCard.vue";
 import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import MobileCardSkeleton from "@/components/shared/MobileCardSkeleton.vue";
 import { useScreen } from "@/composables/useScreen";
 
 import { filter, update } from "lodash-es";
@@ -972,6 +978,7 @@ const createPipeline = () => {
   showCreatePipeline.value = true;
 };
 
+const isInitialLoading = ref(true);
 const getPipelines = async () => {
   try {
     const response = await pipelineService.getPipelines(
@@ -1025,6 +1032,8 @@ const getPipelines = async () => {
     });
   } catch (error) {
     console.error(error);
+  } finally {
+    isInitialLoading.value = false;
   }
 };
 const editPipeline = (pipeline: any) => {

@@ -306,9 +306,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             data-test="dashboard-list-mobile"
             @refresh="onMobileRefresh"
           >
-            <div v-if="loading" class="mobile-dashboard-list__loading">
-              <q-spinner color="primary" size="32px" />
-            </div>
+            <MobileCardSkeleton
+              v-if="loading && !dashboards?.length"
+              :count="5"
+              data-test="dashboard-list-mobile-skeleton"
+            />
             <div
               v-else-if="!dashboards?.length"
               class="mobile-dashboard-list__empty"
@@ -699,6 +701,7 @@ import { useI18n } from "vue-i18n";
 import dashboardService from "../../services/dashboards";
 import MobileDashboardCard from "@/components/dashboards/MobileDashboardCard.vue";
 import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import MobileCardSkeleton from "@/components/shared/MobileCardSkeleton.vue";
 import { useScreen } from "@/composables/useScreen";
 import { useResponsiveDialog } from "@/composables/useResponsiveDialog";
 import QTablePagination from "../../components/shared/grid/Pagination.vue";
@@ -753,6 +756,7 @@ export default defineComponent({
     AddFolder,
     MobileDashboardCard,
     PullToRefreshWrapper,
+    MobileCardSkeleton,
     MoveDashboardToAnotherFolder,
   },
   setup() {
