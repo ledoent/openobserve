@@ -83,6 +83,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 class="alert-v3-field topbar-name-input tw:text-sm"
                 :class="alertNameError ? 'field-error' : ''"
                 hide-bottom-space
+                autocomplete="off"
+                enterkeyhint="next"
                 @update:model-value="alertNameError = false"
               />
               <q-input
@@ -94,6 +96,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 :placeholder="t('alerts.anomalyNamePlaceholder')"
                 class="alert-v3-field topbar-name-input tw:text-sm"
                 hide-bottom-space
+                autocomplete="off"
+                enterkeyhint="next"
               />
               <div class="tw:flex tw:items-center tw:gap-1.5 tw:shrink-0 tw:ml-2">
                 <label class="alert-v3-inline-label">{{ t('alerts.folder') }}</label>
