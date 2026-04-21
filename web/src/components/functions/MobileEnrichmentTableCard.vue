@@ -192,7 +192,7 @@ export default defineComponent({
     transform 120ms ease;
 
   &[data-tone="file"],
-  &[data-tone="url"] { --enrich-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="url"] { --enrich-accent: var(--o2-primary-btn-bg); }
   &[data-tone="ok"] { --enrich-accent: var(--q-positive, #21ba45); }
   &[data-tone="warn"],
   &[data-tone="pending"] { --enrich-accent: var(--q-warning, #f2c037); }
@@ -210,7 +210,7 @@ export default defineComponent({
   }
 
   &__icon {
-    color: var(--o2-primary, #5960b2);
+    color: var(--o2-primary-btn-bg);
     flex-shrink: 0;
   }
 
@@ -236,8 +236,8 @@ export default defineComponent({
 
     &--file,
     &--url {
-      color: var(--o2-primary, #5960b2);
-      background: color-mix(in srgb, var(--o2-primary, #5960b2) 12%, transparent);
+      color: var(--o2-primary-btn-bg);
+      background: color-mix(in srgb, var(--o2-primary-btn-bg) 12%, transparent);
     }
 
     &--ok {

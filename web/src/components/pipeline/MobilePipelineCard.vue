@@ -238,11 +238,11 @@ export default defineComponent({
     flex-shrink: 0;
 
     &.is-on {
-      background: var(--o2-status-success-text, #21ba45);
+      background: var(--o2-status-success-text);
       box-shadow: 0 0 0 3px rgba(33, 186, 69, 0.15);
     }
     &.is-off {
-      background: var(--o2-text-muted, #818594);
+      background: var(--o2-text-muted);
     }
   }
 
@@ -273,7 +273,7 @@ export default defineComponent({
     margin-top: 3px;
     margin-left: 16px;
     font-size: 11px;
-    color: var(--o2-text-muted, #818594);
+    color: var(--o2-text-muted);
     text-transform: capitalize;
   }
 
@@ -285,7 +285,7 @@ export default defineComponent({
     align-items: center;
     gap: 10px;
     font-size: 11px;
-    color: var(--o2-text-muted, #818594);
+    color: var(--o2-text-muted);
   }
 
   &__meta-item {
@@ -312,11 +312,11 @@ export default defineComponent({
 
     &.is-on {
       background: rgba(33, 186, 69, 0.12);
-      color: var(--o2-status-success-text, #21ba45);
+      color: var(--o2-status-success-text);
     }
     &.is-off {
       background: rgba(129, 133, 148, 0.12);
-      color: var(--o2-text-muted, #818594);
+      color: var(--o2-text-muted);
     }
   }
 }

@@ -158,7 +158,7 @@ export default defineComponent({
   }
 
   &__icon {
-    color: var(--o2-primary, #5960b2);
+    color: var(--o2-primary-btn-bg);
     flex-shrink: 0;
   }
 
@@ -197,7 +197,7 @@ export default defineComponent({
     flex-wrap: wrap;
     gap: 10px;
     font-size: 11px;
-    color: var(--o2-text-muted, #818594);
+    color: var(--o2-text-muted);
   }
 
   &__meta-item {

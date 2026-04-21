@@ -18,7 +18,7 @@
     top: 0;
     bottom: 0;
     width: 3px;
-    background: var(--#{$var-name}, var(--o2-primary, #5960b2));
+    background: var(--#{$var-name}, var(--o2-primary-btn-bg));
     opacity: 0.85;
   }
 }

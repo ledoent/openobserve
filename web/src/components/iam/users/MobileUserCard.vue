@@ -242,7 +242,7 @@ export default defineComponent({
 
   &__email {
     font-size: 11px;
-    color: var(--o2-text-muted, #818594);
+    color: var(--o2-text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -262,14 +262,14 @@ export default defineComponent({
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    color: var(--o2-text-muted, #818594);
+    color: var(--o2-text-muted);
   }
 
   &__role-pill {
     padding: 2px 8px;
     border-radius: 10px;
     background: rgba(89, 96, 178, 0.12);
-    color: var(--o2-primary, #5960b2);
+    color: var(--o2-primary-btn-bg);
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.04em;

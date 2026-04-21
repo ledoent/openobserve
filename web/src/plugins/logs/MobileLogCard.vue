@@ -181,7 +181,7 @@ export default defineComponent({
   }
 
   &--debug {
-    border-left-color: var(--o2-text-muted, #818594);
+    border-left-color: var(--o2-text-muted);
   }
 
   &__header {
@@ -194,7 +194,7 @@ export default defineComponent({
   &__timestamp {
     font-family: monospace;
     font-size: 11px;
-    color: var(--o2-text-muted, #818594);
+    color: var(--o2-text-muted);
     letter-spacing: 0.02em;
   }
 
