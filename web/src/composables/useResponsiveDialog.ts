@@ -57,10 +57,19 @@ export function useResponsiveDialog(options?: {
 
   const cardStyle = computed(() => {
     const w = options?.desktopWidth;
-    if (w) {
-      return `width: ${w}px; max-width: 95vw`;
+    const base = w ? `width: ${w}px; max-width: 95vw` : "max-width: 95vw";
+    // On mobile, respect iPhone home-indicator / notched-edge safe areas so
+    // the last row of a sheet or side-drawer isn't hidden under the OS UI.
+    if (!isMobile.value) return base;
+    switch (mode) {
+      case "bottom-sheet":
+      case "maximized":
+        return `${base}; padding-bottom: env(safe-area-inset-bottom)`;
+      case "slide-left":
+        return `${base}; padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left)`;
+      default:
+        return base;
     }
-    return "max-width: 95vw";
   });
 
   return { dialogProps, cardStyle, isMobile };

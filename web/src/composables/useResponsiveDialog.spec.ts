@@ -126,6 +126,55 @@ describe("useResponsiveDialog", () => {
     });
   });
 
+  describe("safe-area-inset on mobile cardStyle", () => {
+    beforeEach(() => {
+      mockScreen.lt.sm = true;
+      mockScreen.gt.xs = false;
+      mockScreen.gt.sm = false;
+    });
+
+    it("adds safe-area-inset-bottom padding in bottom-sheet mode", () => {
+      const { cardStyle } = useResponsiveDialog({
+        mobileMode: "bottom-sheet",
+      });
+      expect(cardStyle.value).toContain(
+        "padding-bottom: env(safe-area-inset-bottom)",
+      );
+    });
+
+    it("adds safe-area-inset-bottom padding in maximized mode", () => {
+      const { cardStyle } = useResponsiveDialog({ mobileMode: "maximized" });
+      expect(cardStyle.value).toContain(
+        "padding-bottom: env(safe-area-inset-bottom)",
+      );
+    });
+
+    it("adds both bottom and left insets in slide-left mode", () => {
+      const { cardStyle } = useResponsiveDialog({ mobileMode: "slide-left" });
+      expect(cardStyle.value).toContain(
+        "padding-bottom: env(safe-area-inset-bottom)",
+      );
+      expect(cardStyle.value).toContain(
+        "padding-left: env(safe-area-inset-left)",
+      );
+    });
+
+    it("does not add inset padding in constrained mode", () => {
+      const { cardStyle } = useResponsiveDialog({ mobileMode: "constrained" });
+      expect(cardStyle.value).not.toContain("safe-area-inset");
+    });
+
+    it("does not add inset padding on desktop regardless of mode", () => {
+      mockScreen.lt.sm = false;
+      mockScreen.gt.xs = true;
+      mockScreen.gt.sm = true;
+      const { cardStyle } = useResponsiveDialog({
+        mobileMode: "bottom-sheet",
+      });
+      expect(cardStyle.value).not.toContain("safe-area-inset");
+    });
+  });
+
   describe("isMobile passthrough", () => {
     it("exposes isMobile from useScreen", () => {
       mockScreen.lt.sm = true;

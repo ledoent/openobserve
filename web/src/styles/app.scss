@@ -2213,6 +2213,13 @@ body {
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }
+
+  // Folder side-sheet on mobile: keep the last row of the scrollable body
+  // clear of the iPhone home indicator. Paired with the sheet's inner flex
+  // column so content still fills available height.
+  .mobile-folder-sheet__body {
+    padding-bottom: calc(0.625rem + env(safe-area-inset-bottom)) !important;
+  }
 }
 
 // Content area padding to clear mobile bottom nav

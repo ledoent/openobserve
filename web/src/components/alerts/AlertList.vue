@@ -800,8 +800,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       v-bind="folderSheetDialogProps"
       aria-label="Folders"
     >
-      <q-card style="width: 85vw; max-width: 360px; height: 100%">
-        <div class="tw:h-full tw:p-[0.625rem]">
+      <q-card
+        class="mobile-folder-sheet"
+        style="width: 85vw; max-width: 360px; height: 100%"
+      >
+        <div class="mobile-folder-sheet__body tw:h-full tw:p-[0.625rem]">
           <FolderList
             type="alerts"
             @update:activeFolderId="onMobileFolderSelect"
