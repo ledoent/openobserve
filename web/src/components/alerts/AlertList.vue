@@ -203,8 +203,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 data-test="alert-list-mobile"
                 @refresh="onMobileRefresh"
               >
+                <MobileCardSkeleton
+                  v-if="isInitialLoading && !filteredResults?.length"
+                  :count="5"
+                  data-test="alert-list-mobile-skeleton"
+                />
                 <div
-                  v-if="!filteredResults?.length"
+                  v-else-if="!filteredResults?.length"
                   class="mobile-alert-list__empty"
                 >
                   <NoData />
@@ -998,6 +1003,7 @@ import {
 import FolderList from "../common/sidebar/FolderList.vue";
 import MobileAlertCard from "./MobileAlertCard.vue";
 import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import MobileCardSkeleton from "@/components/shared/MobileCardSkeleton.vue";
 import { useScreen } from "@/composables/useScreen";
 import { useResponsiveDialog } from "@/composables/useResponsiveDialog";
 
@@ -1027,6 +1033,7 @@ export default defineComponent({
     FolderList,
     MobileAlertCard,
     PullToRefreshWrapper,
+    MobileCardSkeleton,
     MoveAcrossFolders,
     AppTabs,
     SelectFolderDropDown,
@@ -1097,6 +1104,7 @@ export default defineComponent({
     const streams: any = ref({});
     const isFetchingStreams = ref(false);
     const isSubmitting = ref(false);
+    const isInitialLoading = ref(true);
 
     // Compact toolbar: icon-only buttons when AI sidebar is open at narrow widths
     const windowWidth = ref(window.innerWidth);
@@ -1707,6 +1715,8 @@ export default defineComponent({
           message: "Error while pulling alerts.",
           timeout: 2000,
         });
+      } finally {
+        isInitialLoading.value = false;
       }
     };
     const getAlertById = async (id: string) => {
@@ -3057,6 +3067,7 @@ export default defineComponent({
       streams,
       isFetchingStreams,
       isSubmitting,
+      isInitialLoading,
       changeMaxRecordToReturn,
       outlinedDelete,
       filterQuery,
