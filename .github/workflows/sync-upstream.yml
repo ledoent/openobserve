@@ -2,6 +2,11 @@ name: Sync main from upstream
 
 # Keeps `ledoent/openobserve:main` a strict mirror of
 # `openobserve/openobserve:main`. Matches the ledoent/fleet pattern.
+#
+# Requires repo secret `SYNC_UPSTREAM_PAT` — a fine-grained PAT on this repo
+# with `Contents: Read and write` and `Workflows: Read and write`. The default
+# `GITHUB_TOKEN` cannot force-update files under `.github/workflows/`, so a
+# user-context token is required.
 
 on:
   schedule:
@@ -17,30 +22,32 @@ concurrency:
 
 jobs:
   sync:
+    if: github.repository != 'openobserve/openobserve'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SYNC_UPSTREAM_PAT }}
 
-      - name: Add upstream remote
-        run: git remote add upstream https://github.com/openobserve/openobserve.git
-
-      - name: Fetch upstream
-        run: git fetch upstream main --tags
-
-      - name: Paranoia — refuse if main has non-bot commits
+      - name: Sync from upstream
         run: |
-          AUTHORS=$(git log upstream/main..origin/main --format='%ae' | sort -u || true)
-          NON_BOT=$(echo "$AUTHORS" | grep -v -E '(github-actions\[bot\]@users\.noreply\.github\.com|^$)' || true)
-          if [ -n "$NON_BOT" ]; then
-            echo "::error::main has non-bot commits not on upstream. Refusing to force-push."
-            echo "Offending authors:"
-            echo "$NON_BOT"
+          set -euo pipefail
+          git remote add upstream https://github.com/openobserve/openobserve.git || true
+          git fetch upstream main --tags
+
+          # Paranoia: refuse to force-push if `main` has commits not in
+          # `upstream/main` from anyone other than github-actions[bot].
+          # Local work belongs on a feature branch, never on `main`.
+          unexpected=$(git log upstream/main..HEAD \
+            --pretty='%an <%ae>' \
+            | grep -v 'github-actions\[bot\]' || true)
+          if [[ -n "$unexpected" ]]; then
+            echo "::error::main has non-bot commits not in upstream/main — refusing to force-push:"
+            echo "$unexpected"
             exit 1
           fi
 
-      - name: Force main to upstream
-        run: git push origin +refs/remotes/upstream/main:refs/heads/main
+          git reset --hard upstream/main
+          git push --force-with-lease origin main
