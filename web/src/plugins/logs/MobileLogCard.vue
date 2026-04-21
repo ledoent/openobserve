@@ -90,22 +90,31 @@ export default defineComponent({
 
     const messageField = computed(() => {
       if (!props.row) return "";
-      // Try common log message field names
-      for (const key of [
-        "log",
-        "message",
-        "msg",
-        "body",
-        "_source",
-        "content",
-      ]) {
-        if (props.row[key]) return String(props.row[key]);
+      // Try common log message field names (strings only — `_source` is an
+      // object in Elasticsearch-shaped payloads and would stringify to
+      // "[object Object]" via `String(...)`).
+      for (const key of ["log", "message", "msg", "body", "content"]) {
+        const val = props.row[key];
+        if (val && typeof val !== "object") return String(val);
+      }
+      // `_source` tends to be a nested object; prefer its inner message field
+      // and fall back to a compact JSON preview.
+      const src = props.row._source;
+      if (src && typeof src === "object") {
+        for (const key of ["log", "message", "msg", "body", "content"]) {
+          const val = (src as Record<string, unknown>)[key];
+          if (val && typeof val !== "object") return String(val);
+        }
+        return JSON.stringify(src).substring(0, 120);
       }
       // Fallback: stringify first non-timestamp field
       const keys = Object.keys(props.row).filter(
         (k) => !k.startsWith("_") && k !== "log" && k !== "timestamp",
       );
-      if (keys.length > 0) return String(props.row[keys[0]]);
+      if (keys.length > 0) {
+        const val = props.row[keys[0]];
+        if (typeof val !== "object") return String(val);
+      }
       // Last-resort fallback: stringify up to the first 5 keys so we don't
       // pay O(row) for log payloads with hundreds of fields. 120 chars is
       // already the truncation budget downstream.
