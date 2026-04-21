@@ -53,6 +53,7 @@ export default defineComponent({
   emits: ["click"],
   setup(props) {
     const formattedTime = computed(() => {
+      if (!props.row) return "";
       const ts =
         props.row._timestamp || props.row["@timestamp"] || props.row.timestamp;
       if (!ts) return "";
@@ -88,6 +89,7 @@ export default defineComponent({
     });
 
     const messageField = computed(() => {
+      if (!props.row) return "";
       // Try common log message field names
       for (const key of [
         "log",
@@ -104,7 +106,13 @@ export default defineComponent({
         (k) => !k.startsWith("_") && k !== "log" && k !== "timestamp",
       );
       if (keys.length > 0) return String(props.row[keys[0]]);
-      return JSON.stringify(props.row).substring(0, 120);
+      // Last-resort fallback: stringify up to the first 5 keys so we don't
+      // pay O(row) for log payloads with hundreds of fields. 120 chars is
+      // already the truncation budget downstream.
+      const sample = Object.fromEntries(
+        Object.entries(props.row).slice(0, 5),
+      );
+      return JSON.stringify(sample).substring(0, 120);
     });
 
     const truncatedMessage = computed(() => {
@@ -113,6 +121,7 @@ export default defineComponent({
     });
 
     const severityLabel = computed(() => {
+      if (!props.row) return "";
       const val =
         props.row.level ||
         props.row.severity ||

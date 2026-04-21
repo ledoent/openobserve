@@ -89,6 +89,29 @@ describe("MobileLogCard", () => {
     );
   });
 
+  it("bounds the JSON fallback to a small key sample for wide rows", () => {
+    // Row with only underscore/timestamp-prefixed keys forces the last-resort
+    // JSON.stringify path. Hundreds of fields shouldn't balloon the output —
+    // the body truncates at 120 chars regardless of row size.
+    const row: Record<string, string> = { _timestamp: Date.now() * 1000 };
+    for (let i = 0; i < 500; i++) row[`_field_${i}`] = `value-${i}`;
+    const wrapper = mount(MobileLogCard, {
+      props: { row, index: 0 },
+    });
+
+    const text = wrapper.find(".mobile-log-card__body").text();
+    expect(text.length).toBeLessThanOrEqual(120);
+  });
+
+  it("renders empty body when row prop is falsy", () => {
+    const wrapper = mount(MobileLogCard, {
+      // Vue prop validation won't block this — we just guard at runtime.
+      props: { row: null as any, index: 0 },
+    });
+
+    expect(wrapper.find(".mobile-log-card__body").text()).toBe("");
+  });
+
   it("handles future timestamps gracefully", () => {
     const futureTs = (Date.now() + 60000) * 1000; // 1 minute in the future (microseconds)
     const wrapper = mount(MobileLogCard, {
