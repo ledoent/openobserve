@@ -187,7 +187,7 @@ export default defineComponent({
   // Left-edge accent stripe keyed to stream type — reinforces the badge
   // color so a list of mixed-type streams is scannable at a glance.
 
-  &[data-tone="logs"] { --stream-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="logs"] { --stream-accent: var(--o2-primary-btn-bg); }
   &[data-tone="metrics"] { --stream-accent: #0d8a6a; }
   &[data-tone="traces"] { --stream-accent: #b26a00; }
   &[data-tone="metadata"] { --stream-accent: #5c5f66; }
@@ -205,7 +205,7 @@ export default defineComponent({
   }
 
   &__icon {
-    color: var(--o2-primary, #5960b2);
+    color: var(--o2-primary-btn-bg);
     flex-shrink: 0;
   }
 
@@ -230,8 +230,8 @@ export default defineComponent({
     flex-shrink: 0;
 
     &--logs {
-      color: var(--o2-primary, #5960b2);
-      background: color-mix(in srgb, var(--o2-primary, #5960b2) 12%, transparent);
+      color: var(--o2-primary-btn-bg);
+      background: color-mix(in srgb, var(--o2-primary-btn-bg) 12%, transparent);
     }
 
     &--metrics {

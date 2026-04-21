@@ -140,7 +140,7 @@ export default defineComponent({
   }
 
   &__icon {
-    color: var(--o2-primary, #5960b2);
+    color: var(--o2-primary-btn-bg);
     flex-shrink: 0;
   }
 

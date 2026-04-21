@@ -161,7 +161,7 @@ export default defineComponent({
   // Unknown destination types (beyond http/email/action) fall through to the
   // mixin's default `--o2-primary` — matches the "http" look, which is fine
   // as a conservative default for unrecognized rows.
-  &[data-tone="http"] { --dest-accent: var(--o2-primary, #5960b2); }
+  &[data-tone="http"] { --dest-accent: var(--o2-primary-btn-bg); }
   &[data-tone="email"] { --dest-accent: #0d8a6a; }
   &[data-tone="action"] { --dest-accent: #b26a00; }
 
@@ -177,7 +177,7 @@ export default defineComponent({
   }
 
   &__icon {
-    color: var(--o2-primary, #5960b2);
+    color: var(--o2-primary-btn-bg);
     flex-shrink: 0;
   }
 
@@ -197,8 +197,8 @@ export default defineComponent({
     font-weight: 600;
     letter-spacing: 0.3px;
     text-transform: uppercase;
-    color: var(--o2-primary, #5960b2);
-    background: color-mix(in srgb, var(--o2-primary, #5960b2) 12%, transparent);
+    color: var(--o2-primary-btn-bg);
+    background: color-mix(in srgb, var(--o2-primary-btn-bg) 12%, transparent);
     border-radius: 999px;
     padding: 2px 8px;
     flex-shrink: 0;

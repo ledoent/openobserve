@@ -179,7 +179,7 @@ export default defineComponent({
     justify-content: center;
     gap: 4px;
     text-decoration: none;
-    color: var(--o2-text-muted, #818594);
+    color: var(--o2-text-muted);
     background: none;
     border: none;
     cursor: pointer;

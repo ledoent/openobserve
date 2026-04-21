@@ -152,7 +152,7 @@ export default defineComponent({
   }
 
   &__icon {
-    color: var(--o2-primary, #5960b2);
+    color: var(--o2-primary-btn-bg);
     flex-shrink: 0;
   }
 
@@ -172,8 +172,8 @@ export default defineComponent({
     font-weight: 600;
     letter-spacing: 0.3px;
     text-transform: uppercase;
-    color: var(--o2-primary, #5960b2);
-    background: color-mix(in srgb, var(--o2-primary, #5960b2) 12%, transparent);
+    color: var(--o2-primary-btn-bg);
+    background: color-mix(in srgb, var(--o2-primary-btn-bg) 12%, transparent);
     border-radius: 999px;
     padding: 2px 8px;
     flex-shrink: 0;
