@@ -1,0 +1,61 @@
+name: Weekly aggregate deploy
+
+# Runs `gitaggregate -c repos.yaml -p` to produce the next `build/deploy`
+# revision: merges `fork main` + `fork ledoent` + `fork mobile-ui-upstream`,
+# force-pushes to `fork build/deploy`. That push triggers `ledoent-build.yml`
+# which produces `v0.70.0-mobile-<shortsha>` in GAR — consumed by the
+# `observe.ledoweb.com` prod deployment (via milestone retag) and by
+# `observe-review.ledoweb.com` (SHA tag).
+#
+# Scheduled for Monday 07:00 UTC — the day after `sync-upstream.yml`'s
+# daily 06:00 UTC run, so the weekly aggregate picks up a fresh `main`.
+#
+# Uses `SYNC_UPSTREAM_PAT` because the default `GITHUB_TOKEN` cannot
+# force-update files under `.github/workflows/` on `build/deploy` (the
+# aggregator ends up rewriting workflows when the merge sources change
+# them). Same PAT constraint as `sync-upstream.yml`.
+
+on:
+  schedule:
+    - cron: "0 7 * * MON"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aggregate-deploy
+  cancel-in-progress: false
+
+jobs:
+  aggregate:
+    if: github.repository != 'openobserve/openobserve'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ledoent
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install git-aggregator
+        run: pip install git-aggregator
+
+      - name: Configure git identity + credential helper
+        env:
+          SYNC_UPSTREAM_PAT: ${{ secrets.SYNC_UPSTREAM_PAT }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          # Anchor the PAT to the fork URL only — never sends to upstream.
+          git config --global credential.https://github.com/ledoent/openobserve.git.helper \
+            "!f() { echo username=x-access-token; echo password=$SYNC_UPSTREAM_PAT; }; f"
+
+      - name: Aggregate and push build/deploy
+        run: |
+          mkdir -p /tmp/aggregate && cd /tmp/aggregate
+          cp "$GITHUB_WORKSPACE/repos.yaml" ./
+          gitaggregate -c repos.yaml -p --log-level INFO
