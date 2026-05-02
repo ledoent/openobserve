@@ -487,9 +487,9 @@ const columns = computed<QTableProps["columns"]>(() => {
 });
 
 // ── Load reports ──────────────────────────────────────────────────────────────
-const loadReports = async (folderId: string, nameQuery?: string) => {
+const loadReports = async (folderId: string, nameQuery?: string, silent = false) => {
   // Use Vuex cache for folder loads (no nameQuery = normal folder navigation)
-  if (!nameQuery && store.state.organizationData.allReportsListByFolderId?.[folderId]) {
+  if (!nameQuery && !silent && store.state.organizationData.allReportsListByFolderId?.[folderId]) {
     const cached = store.state.organizationData.allReportsListByFolderId[folderId];
     staticReportsList.value = cached;
     cachedFolderReports.value = cached;
@@ -497,12 +497,15 @@ const loadReports = async (folderId: string, nameQuery?: string) => {
     return;
   }
 
+
   isLoadingReports.value = true;
-  const dismiss = q.notify({
-    spinner: true,
-    message: "Please wait while fetching reports...",
-    timeout: 2000,
-  });
+  const dismiss = silent
+    ? () => {}
+    : q.notify({
+        spinner: true,
+        message: "Please wait while fetching reports...",
+        timeout: 2000,
+      });
 
   try {
     const folder = searchAcrossFolders.value ? undefined : folderId;
@@ -559,6 +562,14 @@ const invalidateFolderCache = (folderId: string) => {
   const updated = { ...store.state.organizationData.allReportsListByFolderId };
   delete updated[folderId];
   store.dispatch("setAllReportsListByFolderId", updated);
+};
+
+const onMobileRefresh = async (ack: () => void) => {
+  try {
+    await loadReports(activeFolderId.value, undefined, true);
+  } finally {
+    ack();
+  }
 };
 
 const filterReports = () => {

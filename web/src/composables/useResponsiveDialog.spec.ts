@@ -97,6 +97,35 @@ describe("useResponsiveDialog", () => {
     });
   });
 
+  describe("mobile - slide-left mode", () => {
+    beforeEach(() => {
+      mockScreen.lt.sm = true;
+      mockScreen.gt.xs = false;
+      mockScreen.gt.sm = false;
+    });
+
+    it("returns left position with slide transitions", () => {
+      const { dialogProps } = useResponsiveDialog({
+        mobileMode: "slide-left",
+      });
+      expect(dialogProps.value).toEqual({
+        position: "left",
+        transitionShow: "slide-right",
+        transitionHide: "slide-left",
+      });
+    });
+
+    it("returns empty dialogProps on desktop even when slide-left requested", () => {
+      mockScreen.lt.sm = false;
+      mockScreen.gt.xs = true;
+      mockScreen.gt.sm = true;
+      const { dialogProps } = useResponsiveDialog({
+        mobileMode: "slide-left",
+      });
+      expect(dialogProps.value).toEqual({});
+    });
+  });
+
   describe("isMobile passthrough", () => {
     it("exposes isMobile from useScreen", () => {
       mockScreen.lt.sm = true;

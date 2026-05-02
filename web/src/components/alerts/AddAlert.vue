@@ -20,9 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!-- V3 "Single Pane of Glass" Layout (All alert types)                -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-      <div class="tw:flex tw:flex-col" style="height: calc(100vh - var(--navbar-height) - 5px);">
+      <div class="alert-v3-shell tw:flex tw:flex-col" style="height: calc(100vh - var(--navbar-height) - 5px);">
       <div class="alert-v3-topbar card-container tw:mx-[0.625rem] tw:mb-2 tw:shrink-0">
-        <div class="tw:flex tw:items-center tw:gap-2 tw:px-3 tw:h-[48px]">
+        <div class="alert-v3-topbar-inner tw:flex tw:items-center tw:gap-2 tw:px-3 tw:h-[48px]">
 
           <!-- Back + Title -->
           <div class="tw:flex tw:items-center tw:gap-1.5 tw:shrink-0 tw:min-w-0">
@@ -188,10 +188,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </div>
       </div>
 
-      <div class="tw:flex tw:flex-1 tw:min-h-0 tw:mx-[0.625rem] tw:gap-2 tw:mb-2">
+      <div class="alert-v3-main tw:flex tw:flex-1 tw:min-h-0 tw:mx-[0.625rem] tw:gap-2 tw:mb-2">
 
       <!-- LEFT column wrapper (flex: 6.5) -->
-      <div style="flex: 6.5; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px;">
+      <div class="alert-v3-left" style="flex: 6.5; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px;">
 
       <!-- TIER 3: Configuration Tabs -->
       <div class="alert-v3-tabs card-container" style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
@@ -337,7 +337,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <!-- Footer: Cancel / Save (left column, separate card) -->
       <div
-        class="card-container tw:flex tw:items-center tw:justify-end tw:px-3 tw:py-2.5 tw:shrink-0 tw:gap-2"
+        class="card-container add-alert-footer tw:flex tw:items-center tw:justify-end tw:px-3 tw:py-2.5 tw:shrink-0 tw:gap-2"
       >
         <q-btn
           data-test="add-alert-cancel-btn"
@@ -364,7 +364,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </div><!-- end LEFT column wrapper -->
 
       <!-- TIER 2: Preview + Summary (RIGHT 30%) -->
-      <div class="tw:flex tw:flex-col tw:gap-2" style="flex: 3.5; min-width: 0; min-height: 0; overflow: hidden;">
+      <div class="alert-v3-right tw:flex tw:flex-col tw:gap-2" style="flex: 3.5; min-width: 0; min-height: 0; overflow: hidden;">
         <!-- Preview Card -->
         <div class="card-container tw:overflow-hidden tw:flex tw:flex-col" style="flex: 1; min-height: 0;">
           <div
@@ -600,6 +600,66 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+// Mobile: pin the Cancel/Save footer to the viewport bottom so the
+// primary action stays reachable without scrolling long forms. Safe-area
+// inset keeps the buttons above the home indicator on iOS.
+@media (max-width: 599px) {
+  // Release the fixed viewport height so the page scrolls naturally on phones
+  // instead of cramming topbar, tabs, preview, summary, and footer into 100vh.
+  .alert-v3-shell {
+    height: auto !important;
+    // Leave room for the mobile bottom nav so the sticky Save footer
+    // doesn't get trapped beneath it.
+    padding-bottom: calc(var(--o2-mobile-nav-height, 56px) + 0.5rem);
+  }
+
+  // Topbar: let inline fields wrap onto multiple rows instead of overflowing.
+  .alert-v3-topbar-inner {
+    flex-wrap: wrap;
+    height: auto !important;
+    row-gap: 8px;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  // Stack the two-column body vertically; lift the left column's children
+  // (tabs + footer) into the main flex so `order` can place the footer last
+  // after the right column's preview + summary.
+  .alert-v3-main {
+    flex-direction: column;
+  }
+
+  .alert-v3-left {
+    display: contents;
+  }
+
+  .alert-v3-right {
+    flex: none !important;
+    width: 100%;
+    order: 2;
+  }
+
+  .alert-v3-tabs {
+    flex: none !important;
+    min-height: 420px;
+    order: 1;
+  }
+
+  .alert-v3-right > .card-container {
+    flex: none !important;
+    min-height: 320px;
+  }
+
+  .add-alert-footer {
+    position: sticky;
+    bottom: calc(var(--o2-mobile-nav-height, 56px));
+    order: 3;
+    z-index: 10;
+    padding-bottom: calc(0.625rem + env(safe-area-inset-bottom, 0px)) !important;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
 .active-tab {
   color: var(--q-primary);
   border-bottom: 2px solid var(--q-primary);

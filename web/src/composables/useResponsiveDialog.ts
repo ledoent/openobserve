@@ -27,10 +27,11 @@ import { useScreen } from "./useScreen";
  *   'constrained' (default) — card gets max-width: 95vw, dialog unchanged
  *   'maximized' — dialog gets maximized prop on mobile
  *   'bottom-sheet' — dialog gets position="bottom" on mobile
+ *   'slide-left' — dialog enters from the left edge (side sheet)
  */
 export function useResponsiveDialog(options?: {
   desktopWidth?: number;
-  mobileMode?: "maximized" | "bottom-sheet" | "constrained";
+  mobileMode?: "maximized" | "bottom-sheet" | "constrained" | "slide-left";
 }) {
   const { isMobile } = useScreen();
   const mode = options?.mobileMode ?? "constrained";
@@ -42,6 +43,12 @@ export function useResponsiveDialog(options?: {
         return { maximized: true };
       case "bottom-sheet":
         return { position: "bottom" as const, fullWidth: true };
+      case "slide-left":
+        return {
+          position: "left" as const,
+          transitionShow: "slide-right",
+          transitionHide: "slide-left",
+        };
       case "constrained":
       default:
         return {};
