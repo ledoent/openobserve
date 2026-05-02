@@ -12,6 +12,8 @@
 #      `sync-upstream.yml`. Forms the base tree.
 #   2. `fork ledoent` — this branch (CI, repos.yaml, dev-proxy chore).
 #   3. `fork mobile-ui-upstream` — PR #3 feature branch (mobile UX).
+#   4. `fork fix/sql-aggregate-columns` — PR #4 SQL aggregate column fix
+#      (temporary, remove once PR is merged upstream).
 #
 # The push to `build/deploy` triggers `ledoent-build.yml`, which produces
 # `v0.70.0-mobile-<shortsha>` in GAR. Milestone tags (e.g. `-r2`) are cut
@@ -25,4 +27,5 @@
     - fork main
     - fork ledoent
     - fork mobile-ui-upstream
+    - fork fix/sql-aggregate-columns
   target: fork build/deploy
