@@ -1056,7 +1056,9 @@ export const useStreamFields = () => {
                     showWrap: true,
                     wrapContent: false,
                   },
-                  size: getColumnWidth(aggContext, field),
+                  size: aggContext
+                    ? getColumnWidth(aggContext, field)
+                    : 150,
                   maxSize: window.innerWidth,
                 });
               }
