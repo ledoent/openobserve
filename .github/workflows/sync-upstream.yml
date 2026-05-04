@@ -10,7 +10,10 @@ name: Sync main from upstream
 
 on:
   schedule:
-    - cron: "0 6 * * *"
+    # Mon + Thu 06:00 UTC. Daily sync was triggering ~30 standard-30
+    # Playwright builds/month on Ubicloud — most upstream churn doesn't
+    # need that cadence on our fork.
+    - cron: "0 6 * * 1,4"
   workflow_dispatch:
 
 permissions:
@@ -37,6 +40,14 @@ jobs:
           git remote add upstream https://github.com/openobserve/openobserve.git || true
           git fetch upstream main --tags
 
+          # No-op early exit: if upstream/main is already at our origin/main,
+          # skip the push so we don't trigger a downstream Playwright run for
+          # nothing.
+          if [[ "$(git rev-parse upstream/main)" == "$(git rev-parse HEAD)" ]]; then
+            echo "Already in sync with upstream/main ($(git rev-parse --short HEAD)) — skipping push."
+            exit 0
+          fi
+
           # Paranoia: refuse to force-push if `main` has commits not in
           # `upstream/main` from anyone other than github-actions[bot].
           # Local work belongs on a feature branch, never on `main`.
@@ -49,5 +60,7 @@ jobs:
             exit 1
           fi
 
+          echo "Upstream has new commits — fast-forwarding origin/main:"
+          git log --oneline HEAD..upstream/main | head -20
           git reset --hard upstream/main
           git push --force-with-lease origin main
