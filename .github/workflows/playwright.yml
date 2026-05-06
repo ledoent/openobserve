@@ -136,7 +136,9 @@ jobs:
   ui_integration_tests:
     name: e2e / ${{ matrix.testfolder }}
     needs: [build_binary]
-    runs-on: ubuntu-latest
+    # Default ubuntu-latest (free, 2 vCPU). A shard that races on the slower
+    # runner can opt into a bigger one via `runner:` in its matrix entry.
+    runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
     # container:
     #   image: mcr.microsoft.com/playwright:v1.50.0-jammy
     #   options: --user root
@@ -282,6 +284,10 @@ jobs:
               ]
           - testfolder: "Streams"
             browser: "chrome"
+            # streaming.spec.js JOIN-query test races on ubuntu-latest's
+            # 2 vCPU — the SQL validator can take >45s to enable the Run
+            # button. Pin this shard to ubicloud-standard-8 (8 vCPU).
+            runner: ubicloud-standard-8
             run_files:
               [
                 "multiselect-stream.spec.js",
