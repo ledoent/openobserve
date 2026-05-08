@@ -61,6 +61,6 @@ jobs:
           fi
 
           echo "Upstream has new commits — fast-forwarding origin/main:"
-          git log --oneline HEAD..upstream/main | head -20
+          git log -n 20 --oneline HEAD..upstream/main
           git reset --hard upstream/main
           git push --force-with-lease origin main
