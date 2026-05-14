@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     >
       {{ t("iam.groups") }}
     </div>
-    <div class=" row items-center justify-end">
+    <div class="tw:flex tw:items-center tw:justify-end tw:gap-3">
         <div data-test="iam-groups-search-input">
           <q-input
               v-model="filterQuery"
@@ -40,19 +40,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </template>
             </q-input>
         </div>
-        <q-btn
+        <OButton
           data-test="iam-groups-add-group-btn"
-          class="q-ml-sm o2-primary-button tw:h-[36px]"
-          flat
-          no-caps
-          :label="t(`iam.addGroup`)"
+          variant="primary"
+          size="sm"
           @click="addGroup"
-        />
+        >
+          {{ t('iam.addGroup') }}
+        </OButton>
       </div>
     </div>
     </div>
     <div class="tw:w-full tw:h-full">
-      <div class="card-container"  style="height: calc(100vh - var(--navbar-height) - 92px)">      
+      <div
+        v-if="useCardLayout"
+        class="card-container mobile-group-list-wrap"
+      >
+        <PullToRefreshWrapper
+          class="mobile-group-list-scroll"
+          @refresh="onMobileRefresh"
+        >
+          <div
+            v-if="visibleRows.length === 0"
+            class="mobile-group-list-empty"
+          >
+            <span>{{ t("iam.noGroupsYet") || "No groups yet" }}</span>
+          </div>
+          <div v-else class="mobile-group-list">
+            <MobileGroupCard
+              v-for="row in visibleRows"
+              :key="row.group_name"
+              :row="row"
+              @click="editGroup"
+              @edit="editGroup"
+              @delete="showConfirmDialog"
+            />
+          </div>
+        </PullToRefreshWrapper>
+      </div>
+      <div v-else class="card-container"  style="height: calc(100vh - var(--navbar-height) - 92px)">
         <app-table
         data-test="iam-groups-table-section"
         class="iam-table o2-quasar-app-table o2-quasar-table-header-sticky"
@@ -76,49 +102,38 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       >
         <template  v-slot:actions="slotProps: any">
           <div class="tw:flex tw:items-center tw:gap-2 tw:justify-center">
-            <q-btn
+            <OButton
               :data-test="`iam-groups-edit-${slotProps.column.row.group_name}-role-icon`"
-              padding="sm"
-              unelevated
-              size="sm"
-              round
-              flat
-              icon="edit"
+              variant="ghost"
+              size="icon-circle-sm"
               :title="t('common.edit')"
               @click="editGroup(slotProps.column.row)"
             >
-            </q-btn>
-            <q-btn
+              <q-icon name="edit" />
+            </OButton>
+            <OButton
               :data-test="`iam-groups-delete-${slotProps.column.row.group_name}-role-icon`"
-              padding="sm"
-              unelevated
-              size="sm"
-              round
-              flat
-              :icon="outlinedDelete"
+              variant="ghost"
+              size="icon-circle-sm"
               :title="t('common.delete')"
               @click="showConfirmDialog(slotProps.column.row)"
             >
-            </q-btn>
+              <q-icon :name="outlinedDelete" />
+            </OButton>
           </div>
         </template>
         <template v-slot:bottom-actions>
-          <q-btn
+          <OButton
             v-if="selectedGroups.length > 0"
             data-test="iam-groups-bulk-delete-btn"
-            class="flex items-center q-mr-sm no-border o2-secondary-button tw:h-[36px]"
-            :class="
-              store.state.theme === 'dark'
-                ? 'o2-secondary-button-dark'
-                : 'o2-secondary-button-light'
-            "
-            no-caps
-            dense
+            variant="outline"
+            size="sm"
+            class="tw:mr-2"
             @click="openBulkDeleteDialog"
           >
-            <q-icon name="delete" size="16px" />
-            <span class="tw:ml-2">{{ t('common.delete') }}</span>
-          </q-btn>
+            <template #icon-left><q-icon name="delete" /></template>
+            {{ t('common.delete') }}
+          </OButton>
         </template>
       </app-table>
     </div>
@@ -126,7 +141,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </div>
     <q-dialog v-model="showAddGroup" position="right" full-height maximized>
       <AddGroup
-        style="width: 30vw"
+        class="app-groups-add-panel"
         :org_identifier="store.state.selectedOrganization.identifier"
         @cancel:hideform="hideAddGroup"
         @added:group="setupGroups"
@@ -152,6 +167,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <script setup lang="ts">
 import { ref, onBeforeMount, computed } from "vue";
 import AddGroup from "./AddGroup.vue";
+import OButton from "@/lib/core/Button/OButton.vue";
 import { useI18n } from "vue-i18n";
 import AppTable from "@/components/AppTable.vue";
 import { cloneDeep } from "lodash-es";
@@ -160,9 +176,12 @@ import { useStore } from "vuex";
 import { getGroups, deleteGroup, bulkDeleteGroups } from "@/services/iam";
 import usePermissions from "@/composables/iam/usePermissions";
 import { useQuasar } from "quasar";
+import { useScreen } from "@/composables/useScreen";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import { useReo } from "@/services/reodotdev_analytics";
 import { outlinedDelete } from "@quasar/extras/material-icons-outlined";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import MobileGroupCard from "./MobileGroupCard.vue";
 
 const showAddGroup = ref(false);
 
@@ -371,9 +390,44 @@ const visibleRows = computed(() => {
 })
 
 const hasVisibleRows = computed(() => visibleRows.value.length > 0)
+
+// Use cards up to the md breakpoint so tablets get the mobile layout too.
+const { isMobileOrTablet: useCardLayout } = useScreen();
+
+const onMobileRefresh = async (ack: () => void) => {
+  try {
+    await setupGroups();
+  } finally {
+    ack();
+  }
+};
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+@media (max-width: 1023px) {
+  .mobile-group-list-wrap {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-group-list-scroll {
+    height: calc(100vh - var(--navbar-height) - 92px - var(--o2-mobile-nav-height, 0px));
+  }
+
+  .mobile-group-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px;
+  }
+
+  .mobile-group-list-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--o2-text-secondary);
+  }
+}
+</style>
 <style lang="scss">
 .iam-table {
   .thead-sticky,
@@ -388,6 +442,17 @@ const hasVisibleRows = computed(() => visibleRows.value.length > 0)
   .q-table--dark .thead-sticky,
   .q-table--dark .tfoot-sticky {
     background: transparent !important;
+  }
+}
+
+// AddGroup side-panel: 30vw on desktop, full-width on mobile so the
+// form doesn't get squeezed into a 30% sliver of a 375px screen.
+.app-groups-add-panel {
+  width: 30vw;
+}
+@media (max-width: 599px) {
+  .app-groups-add-panel {
+    width: 100vw !important;
   }
 }
 </style>

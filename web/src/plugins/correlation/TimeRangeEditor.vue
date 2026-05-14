@@ -21,20 +21,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     @hide="handleClose"
     data-test="time-range-editor-dialog"
   >
-    <q-card style="min-width: 500px; max-width: 600px">
+    <q-card style="min-width: min(500px, 95vw); max-width: min(600px, 95vw)">
       <!-- Header -->
       <q-card-section class="row items-center q-pb-none">
         <div class="text-h6">{{ t('correlation.logs.timeRange.title') }}</div>
         <q-space />
-        <q-btn
-          icon="close"
-          flat
-          round
-          dense
+        <OButton
+          variant="ghost"
+          size="icon-sm"
           v-close-popup
           :aria-label="t('common.close')"
           data-test="close-dialog-btn"
-        />
+        >
+          <X :size="14" />
+        </OButton>
       </q-card-section>
 
       <q-separator class="q-mt-md" />
@@ -165,27 +165,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <!-- Actions -->
       <q-card-actions align="right" class="q-pa-md">
-        <q-btn
-          flat
-          :label="t('common.cancel')"
+        <OButton
+          variant="outline"
+          size="sm-action"
           @click="handleCancel"
           data-test="cancel-btn"
-        />
-        <q-btn
-          flat
-          :label="t('common.reset')"
-          icon="restart_alt"
+        >
+          {{ t('common.cancel') }}
+        </OButton>
+        <OButton
+          variant="ghost"
+          size="sm-action"
           @click="handleReset"
           data-test="reset-btn"
-        />
-        <q-btn
-          :label="t('common.apply')"
-          color="primary"
-          class="o2-primary-button"
+        >
+          <RotateCcw :size="14" class="tw:mr-1" />
+          {{ t('common.reset') }}
+        </OButton>
+        <OButton
+          variant="primary"
+          size="sm-action"
           @click="handleApply"
-          :disable="!isValid"
+          :disabled="!isValid"
           data-test="apply-btn"
-        />
+        >
+          {{ t('common.apply') }}
+        </OButton>
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -195,6 +200,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { date } from 'quasar';
+import OButton from '@/lib/core/Button/OButton.vue';
+import { X, RotateCcw } from 'lucide-vue-next';
 
 interface Props {
   modelValue: boolean;

@@ -1,4 +1,4 @@
-<!-- Copyright 2026 OpenObserve Inc.
+﻿<!-- Copyright 2026 OpenObserve Inc.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -38,17 +38,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   </template>
                 </q-input>
               </div>
-              <q-btn
-                  class="q-ml-sm o2-primary-button tw:h-[36px]"
-                flat
-                no-caps
-                :label="t(`function.add`)"
+              <OButton
+                class="q-ml-sm"
+                variant="primary"
+                size="sm-action"
                 data-test="function-list-add-function-btn"
                 @click="showAddUpdateFn({})"
-              />
+              >
+                {{ t(`function.add`) }}
+              </OButton>
           </div>
         </div>
-        <div class="tw:w-full tw:h-full tw:pb-[0.625rem]">
+        <div
+          v-if="useCardLayout"
+          class="card-container mobile-function-list-wrap"
+        >
+          <PullToRefreshWrapper
+            class="mobile-function-list-scroll"
+            @refresh="onMobileRefresh"
+          >
+            <div
+              v-if="visibleRows.length === 0"
+              class="mobile-function-list-empty"
+            >
+              <span>{{ t("function.noDataMsg") || "No functions yet" }}</span>
+            </div>
+            <div v-else class="mobile-function-list">
+              <MobileFunctionCard
+                v-for="row in visibleRows"
+                :key="row.name"
+                :row="row"
+                @click="(r: any) => showAddUpdateFn({ row: r })"
+                @edit="(r: any) => showAddUpdateFn({ row: r })"
+                @pipelines="(r: any) => getAssociatedPipelines({ row: r })"
+                @delete="(r: any) => showDeleteDialogFn({ row: r })"
+              />
+            </div>
+          </PullToRefreshWrapper>
+        </div>
+        <div v-else class="tw:w-full tw:h-full tw:pb-[0.625rem]">
           <div class="card-container tw:h-[calc(100vh-127px)]">
             <q-table
               ref="qTable"
@@ -70,39 +98,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </template>
               <template v-slot:body-cell-actions="props">
                 <q-td :props="props">
-                  <q-btn
-                    padding="sm"
-                    unelevated
-                    size="sm"
-                    icon="edit"
-                    round
-                    flat
+                  <OButton
+                    variant="ghost"
+                    size="icon-sm"
                     :title="t('function.updateTitle')"
+                    data-test="function-list-edit-function-btn"
                     @click="showAddUpdateFn(props)"
                   >
-                </q-btn>
-                  <q-btn
-                    padding="sm"
-                    unelevated
-                    size="sm"
-                    :icon="outlinedDelete"
-                    round
-                    flat
+                    <Pencil :size="14" />
+                  </OButton>
+                  <OButton
+                    variant="ghost-destructive"
+                    size="icon-sm"
                     :title="t('function.delete')"
+                    data-test="function-list-delete-function-btn"
                     @click="showDeleteDialogFn(props)"
                   >
-                </q-btn>
-                  <q-btn
-                    padding="sm"
-                    unelevated
-                    size="sm"
-                    :icon="outlinedAccountTree"
-                    round
-                    flat
+                    <Trash2 :size="14" />
+                  </OButton>
+                  <OButton
+                    variant="ghost"
+                    size="icon-sm"
                     :title="'Associated Pipelines'"
                     @click="getAssociatedPipelines(props)"
                   >
-                </q-btn>
+                    <q-icon :name="outlinedAccountTree" size="14px" />
+                  </OButton>
                 </q-td>
               </template>
 
@@ -122,26 +143,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </template>
 
               <template #bottom="scope">
-                <div class="tw:flex tw:items-center tw:justify-between tw:w-full tw:h-[48px]">
+                <div class="tw:flex tw:items-center tw:justify-between tw:w-full tw:py-2">
                   <div class="o2-table-footer-title tw:flex tw:items-center tw:w-[100px] tw:mr-md">
                         {{ resultTotal }} {{ t('function.header') }}
                       </div>
-                  <q-btn
+                  <OButton
                     v-if="selectedFunctions.length > 0"
                     data-test="function-list-delete-functions-btn"
-                    class="flex items-center q-mr-sm no-border o2-secondary-button tw:h-[36px]"
-                    :class="
-                      store.state.theme === 'dark'
-                        ? 'o2-secondary-button-dark'
-                        : 'o2-secondary-button-light'
-                    "
-                    no-caps
-                    dense
+                    variant="outline"
+                    size="sm"
+                    class="tw:mr-2"
                     @click="openBulkDeleteDialog"
                   >
-                    <q-icon name="delete" size="16px" />
-                    <span class="tw:ml-2">Delete</span>
-                  </q-btn>
+                    <template #icon-left>
+                      <Trash2 class="tw:size-4 tw:shrink-0" />
+                    </template>
+                    Delete
+                  </OButton>
                   <QTablePagination
                   :scope="scope"
                   :position="'bottom'"
@@ -254,6 +272,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 </template>
 
 <script lang="ts">
+
 import {
   defineAsyncComponent,
   defineComponent,
@@ -265,12 +284,15 @@ import {
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { useQuasar, type QTableProps } from "quasar";
+import { useScreen } from "@/composables/useScreen";
 import { useI18n } from "vue-i18n";
 
 import QTablePagination from "../shared/grid/Pagination.vue";
 import jsTransformService from "../../services/jstransform";
 import NoData from "../shared/grid/NoData.vue";
 import ConfirmDialog from "../ConfirmDialog.vue";
+import PullToRefreshWrapper from "../shared/PullToRefreshWrapper.vue";
+import MobileFunctionCard from "./MobileFunctionCard.vue";
 import segment from "../../services/segment_analytics";
 import { getImageURL, verifyOrganizationStatus } from "../../utils/zincutils";
 import {
@@ -279,6 +301,8 @@ import {
 } from "@quasar/extras/material-icons-outlined";
 import { useReo } from "@/services/reodotdev_analytics";
 import searchState from "@/composables/useLogs/searchState";
+import OButton from "@/lib/core/Button/OButton.vue";
+import { Pencil, Trash2 } from "lucide-vue-next";
 
 export default defineComponent({
   name: "functionList",
@@ -287,6 +311,11 @@ export default defineComponent({
     AddFunction: defineAsyncComponent(() => import("./AddFunction.vue")),
     NoData,
     ConfirmDialog,
+    PullToRefreshWrapper,
+    MobileFunctionCard,
+    OButton,
+    Pencil,
+    Trash2,
   },
   emits: [
     "updated:fields",
@@ -358,7 +387,7 @@ export default defineComponent({
         message: "Please wait while loading functions...",
       });
 
-      jsTransformService
+      return jsTransformService
         .list(
           1,
           100000,
@@ -636,6 +665,16 @@ export default defineComponent({
     });
     const hasVisibleRows = computed(() => visibleRows.value.length > 0);
 
+    // Use cards up to the md breakpoint so tablets get the mobile layout too.
+    const { isMobileOrTablet: useCardLayout } = useScreen();
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await getJSTransforms();
+      } finally {
+        ack();
+      }
+    };
+
     // Watch visibleRows to sync resultTotal with search filter
     watch(visibleRows, (newVisibleRows) => {
       resultTotal.value = newVisibleRows.length;
@@ -781,6 +820,8 @@ export default defineComponent({
       bulkDeleteFunctions,
       confirmBulkDelete,
       selectedFunctions,
+      useCardLayout,
+      onMobileRefresh,
     };
   },
   computed: {
@@ -807,6 +848,31 @@ export default defineComponent({
 });
 </script>
 
+<style scoped lang="scss">
+@media (max-width: 1023px) {
+  .mobile-function-list-wrap {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-function-list-scroll {
+    height: calc(100vh - var(--navbar-height) - 92px - var(--o2-mobile-nav-height, 0px));
+  }
+
+  .mobile-function-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px;
+  }
+
+  .mobile-function-list-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--o2-text-secondary);
+  }
+}
+</style>
 <style lang="scss">
 .pipeline-list-container {
   max-height: 200px; /* Adjust based on item height to fit 5 items */

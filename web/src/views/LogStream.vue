@@ -1,4 +1,4 @@
-<!-- Copyright 2026 OpenObserve Inc.
+﻿<!-- Copyright 2026 OpenObserve Inc.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -17,65 +17,120 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <!-- eslint-disable vue/v-on-event-hyphenation -->
 <!-- eslint-disable vue/attribute-hyphenation -->
 <template>
-  <div
-    data-test="alert-list-page"
-    class="q-pa-none flex flex-col"
-  >
+  <div data-test="alert-list-page" class="q-pa-none flex flex-col">
     <div class="tw:w-full tw:h-full tw:px-[0.625rem] tw:pb-[0.625rem] q-pt-xs">
-        <div class="card-container tw:mb-[0.625rem]">
-          <div class="flex items-center justify-between full-width tw:py-3 tw:px-4 tw:h-[68px]">
-            <div class="q-table__title tw:font-[600]" data-test="log-stream-title-text">
-              {{ t("logStream.header") }}
-            </div>
-            <div class="flex items-start">
-              <div class="flex justify-between items-end">
-
-                  <div class="app-tabs-container tw:h-[36px] q-mr-sm">
-                      <app-tabs
-                      class="tabs-selection-container"
-                      :tabs="streamTabs"
-                      v-model:active-tab="streamActiveTab"
-                      @update:active-tab="filterLogStreamByTab"
-                    />
-                </div>
-              </div>
-              <div data-test="streams-search-stream-input">
-                <q-input
-                  v-model="filterQuery"
-                  borderless
-                  dense
-                  class="q-ml-auto no-border o2-search-input tw:h-[36px]"
-                  :placeholder="t('logStream.search')"
-                  debounce="300"
-                >
-                  <template #prepend>
-                    <q-icon class="o2-search-input-icon" name="search" />
-                  </template>
-                </q-input>
-              </div>
-              <q-btn
-                data-test="log-stream-refresh-stats-btn"
-                class="q-ml-sm o2-secondary-button tw:h-[36px]"
-                flat
-                no-caps
-                @click="getLogStream(true)"
+      <div class="card-container tw:mb-[0.625rem] log-stream-topbar">
+        <div
+          class="log-stream-topbar__row flex items-center justify-between full-width tw:py-3 tw:px-4 tw:h-[68px]"
+        >
+          <div
+            class="q-table__title tw:font-[600]"
+            data-test="log-stream-title-text"
+          >
+            {{ t("logStream.header") }}
+          </div>
+          <div class="log-stream-topbar__actions flex items-start">
+            <div class="flex justify-between items-end">
+              <OToggleGroup
+                :model-value="streamActiveTab"
+                @update:model-value="(v) => filterLogStreamByTab(v as string)"
+                class="q-mr-sm"
               >
-                <span>{{ t(`logStream.refreshStats`) }}</span>
-              </q-btn>
-              <q-btn
-                v-if="isSchemaUDSEnabled"
-                data-test="log-stream-add-stream-btn"
-                class="q-ml-sm o2-primary-button tw:h-[36px]"
-                flat
-                no-caps
-                :label="t(`logStream.add`)"
-                @click="addStream"
-              />
+                <OToggleGroupItem value="logs" size="sm">
+                  <template #icon-left
+                    ><ScrollText class="tw:size-3.5 tw:shrink-0"
+                  /></template>
+                  {{ t("logStream.labelLogs") }}
+                </OToggleGroupItem>
+                <OToggleGroupItem value="metrics" size="sm">
+                  <template #icon-left
+                    ><BarChart2 class="tw:size-3.5 tw:shrink-0"
+                  /></template>
+                  {{ t("logStream.labelMetrics") }}
+                </OToggleGroupItem>
+                <OToggleGroupItem value="traces" size="sm">
+                  <template #icon-left
+                    ><GitFork class="tw:size-3.5 tw:shrink-0"
+                  /></template>
+                  {{ t("logStream.labelTraces") }}
+                </OToggleGroupItem>
+                <OToggleGroupItem value="metadata" size="sm">
+                  <template #icon-left
+                    ><Info class="tw:size-3.5 tw:shrink-0"
+                  /></template>
+                  {{ t("logStream.labelMetadata") }}
+                </OToggleGroupItem>
+              </OToggleGroup>
             </div>
+            <div data-test="streams-search-stream-input">
+              <q-input
+                v-model="filterQuery"
+                borderless
+                dense
+                class="q-ml-auto no-border o2-search-input tw:h-[36px]"
+                :placeholder="t('logStream.search')"
+                debounce="300"
+              >
+                <template #prepend>
+                  <q-icon class="o2-search-input-icon" name="search" />
+                </template>
+              </q-input>
+            </div>
+            <OButton
+              data-test="log-stream-refresh-stats-btn"
+              variant="outline"
+              size="sm-action"
+              class="q-ml-sm"
+              @click="getLogStream(true)"
+            >
+              {{ t(`logStream.refreshStats`) }}
+            </OButton>
+            <OButton
+              v-if="isSchemaUDSEnabled"
+              data-test="log-stream-add-stream-btn"
+              variant="primary"
+              size="sm-action"
+              class="q-ml-sm"
+              @click="addStream"
+            >
+              {{ t(`logStream.add`) }}
+            </OButton>
           </div>
         </div>
+      </div>
       <div class="tw:w-full tw:h-full">
-        <div class="card-container tw:h-[calc(100vh-126px)]">
+        <div
+          v-if="useCardLayout"
+          class="card-container mobile-stream-list-wrap"
+        >
+          <PullToRefreshWrapper
+            class="mobile-stream-list-scroll"
+            @refresh="onMobileRefresh"
+          >
+            <div
+              v-if="!loadingState && logStream.length === 0"
+              class="mobile-stream-list-empty"
+            >
+              <span>{{ t("logStream.noStreamsYet") || "No streams yet" }}</span>
+            </div>
+            <div v-else-if="loadingState" class="mobile-stream-list-loading">
+              <q-spinner-hourglass color="primary" size="lg" />
+            </div>
+            <div v-else class="mobile-stream-list">
+              <MobileStreamCard
+                v-for="row in logStream"
+                :key="`${row.name}-${row.stream_type}`"
+                :row="row"
+                :show-doc-count="!!store.state.zoConfig.show_stream_stats_doc_num"
+                @click="(r: any) => exploreStream({ row: r })"
+                @explore="(r: any) => exploreStream({ row: r })"
+                @schema="(r: any) => listSchema({ row: r })"
+                @delete="(r: any) => confirmDeleteAction({ row: r })"
+              />
+            </div>
+          </PullToRefreshWrapper>
+        </div>
+        <div v-else class="card-container tw:h-[calc(100vh-126px)]">
           <q-table
             data-test="log-stream-table"
             class="o2-quasar-table o2-row-md o2-quasar-table-header-sticky"
@@ -89,14 +144,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             v-model:pagination="pagination"
             :filter="filterQuery"
             :filter-method="filterData"
-            :style="logStream?.length
-                  ? 'width: 100%; height: calc(100vh - var(--navbar-height) - 77px)' 
-                  : 'width: 100%'"
+            :style="
+              logStream?.length
+                ? 'width: 100%; height: calc(100vh - var(--navbar-height) - 77px)'
+                : 'width: 100%'
+            "
             :rows-per-page-options="perPageOptions"
             @request="onRequest"
           >
             <template #no-data>
-              <div v-if="!loadingState" class="text-center full-width full-height">
+              <div
+                v-if="!loadingState"
+                class="text-center full-width full-height"
+              >
                 <NoData />
               </div>
               <div
@@ -107,122 +167,122 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </div>
             </template>
             <template #body-selection="scope">
-              <q-checkbox v-model="scope.selected" size="sm" :class="store.state.theme === 'dark' ? 'o2-table-checkbox-dark' : 'o2-table-checkbox-light'" class="o2-table-checkbox" />
+              <q-checkbox
+                v-model="scope.selected"
+                size="sm"
+                :class="
+                  store.state.theme === 'dark'
+                    ? 'o2-table-checkbox-dark'
+                    : 'o2-table-checkbox-light'
+                "
+                class="o2-table-checkbox"
+              />
             </template>
             <template #body-cell-actions="props">
               <q-td :props="props">
-                <q-btn
+                <OButton
                   :title="t('logStream.explore')"
-                  padding="sm"
-                  unelevated
-                  size="sm"
-                  round
-                  flat
+                  data-test="log-stream-explore-btn"
+                  variant="ghost"
+                  size="icon-sm"
                   @click="exploreStream(props)"
-                  icon="search"
                 >
-              </q-btn>
-                <q-btn
+                  <Search class="tw:size-4" />
+                </OButton>
+                <OButton
                   :title="t('logStream.schemaHeader')"
-                  padding="sm"
-                  unelevated
-                  size="sm"
-                  round
-                  flat
+                  data-test="log-stream-schema-btn"
+                  variant="ghost"
+                  size="icon-sm"
                   @click="listSchema(props)"
-                  icon="list_alt"
                 >
-              </q-btn>
-                <q-btn
+                  <FileText class="tw:size-4" />
+                </OButton>
+                <OButton
                   :title="t('logStream.delete')"
-                  padding="sm"
-                  unelevated
-                  size="sm"
-                  round
-                  flat
+                  variant="ghost-destructive"
+                  size="icon-sm"
                   @click="confirmDeleteAction(props)"
-                  :icon="outlinedDelete"
                 >
-              </q-btn>
+                  <Trash2 class="tw:size-4" />
+                </OButton>
               </q-td>
             </template>
             <template v-slot:pagination="scope">
-              <div class="tw:flex tw:items-center tw:justify-between tw:py-3 tw:px-4">
-
-
-              <div class="q-btn-group row no-wrap inline q-ml-md">
-                <q-btn
-                  icon="chevron_left"
-                  color="grey-8"
-                  round
-                  dense
-                  flat
-                  size="sm"
-                  class="q-px-sm"
-                  :disable="scope.isFirstPage"
-                  @click="scope.prevPage"
-                />
-                <hr
-                  class="q-separator q-separator--vertical"
-                  aria-orientation="vertical"
-                />
-                <q-btn
-                  icon="chevron_right"
-                  color="grey-8"
-                  round
-                  dense
-                  flat
-                  size="sm"
-                  class="q-px-sm"
-                  :disable="scope.isLastPage"
-                  @click="scope.nextPage"
-                />
+              <div
+                class="tw:flex tw:items-center tw:justify-between tw:py-3 tw:px-4"
+              >
+                <div class="tw:flex tw:items-center q-ml-md">
+                  <OButton
+                    variant="ghost"
+                    size="icon-sm"
+                    :disabled="scope.isFirstPage"
+                    @click="scope.prevPage"
+                  >
+                    <ChevronLeft class="tw:size-4" />
+                  </OButton>
+                  <OButton
+                    variant="ghost"
+                    size="icon-sm"
+                    :disabled="scope.isLastPage"
+                    @click="scope.nextPage"
+                  >
+                    <ChevronRight class="tw:size-4" />
+                  </OButton>
+                </div>
               </div>
-              </div>
-
             </template>
             <template v-slot:header="props">
-                  <q-tr :props="props">
-                    <!-- Adding this block to render the select-all checkbox -->
-                    <q-th auto-width>
-                      <q-checkbox
-                        v-model="props.selected"
-                        size="sm"
-                        :class="store.state.theme === 'dark' ? 'o2-table-checkbox-dark' : 'o2-table-checkbox-light'"
-                        class="o2-table-checkbox"
-                        @update:model-value="props.select"
-                      />
-                    </q-th>
+              <q-tr :props="props">
+                <!-- Adding this block to render the select-all checkbox -->
+                <q-th auto-width>
+                  <q-checkbox
+                    v-model="props.selected"
+                    size="sm"
+                    :class="
+                      store.state.theme === 'dark'
+                        ? 'o2-table-checkbox-dark'
+                        : 'o2-table-checkbox-light'
+                    "
+                    class="o2-table-checkbox"
+                    @update:model-value="props.select"
+                  />
+                </q-th>
 
-                    <!-- Rendering the rest of the columns -->
-                    <q-th
-                      v-for="col in props.cols"
-                      :key="col.name"
-                      :props="props"
-                      :class="col.classes"
-                      :style="col.style"
-                    >
-                      {{ col.label }}
-                    </q-th>
-                  </q-tr>
-                </template>
+                <!-- Rendering the rest of the columns -->
+                <q-th
+                  v-for="col in props.cols"
+                  :key="col.name"
+                  :props="props"
+                  :class="col.classes"
+                  :style="col.style"
+                >
+                  {{ col.label }}
+                </q-th>
+              </q-tr>
+            </template>
 
             <template v-slot:bottom="scope">
-              <div class="tw:flex tw:items-center tw:justify-between tw:w-full tw:h-[48px]">
-                <div class="q-table__separator tw:flex tw:items-center tw:w-full text-bold tw:text-[14px]">
-                  {{scope.pagination.rowsNumber}} Stream(s)
-                  <q-btn
-                  v-if="selected.length > 0"
-                  class="o2-secondary-button tw:h-[36px] tw:ml-4"
-                  no-caps
-                  flat
-                  :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
-                  :disable="isDeleting"
-                  @click="confirmBatchDeleteAction"
+              <div
+                class="tw:flex tw:items-center tw:justify-between tw:w-full tw:py-2"
+              >
+                <div
+                  class="q-table__separator tw:flex tw:items-center tw:w-full text-bold tw:text-[14px]"
                 >
-                  <q-icon name="delete" size="16px" />
-                  <span class="tw:ml-2">{{ isDeleting ? 'Deleting...' : 'Delete' }}</span>
-              </q-btn>
+                  {{ scope.pagination.rowsNumber }} Stream(s)
+                  <OButton
+                    v-if="selected.length > 0"
+                    variant="outline"
+                    size="sm-action"
+                    class="tw:ml-4"
+                    :disabled="isDeleting"
+                    @click="confirmBatchDeleteAction"
+                  >
+                    <template #icon-left
+                      ><Trash2 class="tw:size-3.5 tw:shrink-0"
+                    /></template>
+                    {{ isDeleting ? "Deleting..." : "Delete" }}
+                  </OButton>
                 </div>
                 <QTablePagination
                   :scope="scope"
@@ -232,14 +292,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   @update:changeRecordPerPage="changePagination"
                 />
               </div>
-
             </template>
-
-          </q-table> 
+          </q-table>
         </div>
       </div>
-    </div> 
-  
+    </div>
+
     <q-dialog
       v-model="showIndexSchemaDialog"
       position="right"
@@ -263,60 +321,83 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </q-dialog>
 
     <q-dialog v-model="confirmDelete">
-      <q-card style="width: 420px">
+      <q-card style="width: 420px; max-width: 95vw">
         <q-card-section class="confirmBodyLogStream">
           <div class="head">{{ t("logStream.confirmDeleteHead") }}</div>
           <div class="para">{{ t("logStream.confirmDeleteMsg") }}</div>
         </q-card-section>
-        <div class="tw:w-full tw:flex tw:justify-center tw:items-center tw:text-sm tw:text-gray-500">
-            <q-checkbox class="checkbox-delete-associated-alerts-pipelines" v-model="deleteAssociatedAlertsPipelines" />
+        <div
+          class="tw:w-full tw:flex tw:justify-center tw:items-center tw:text-sm tw:text-gray-500"
+        >
+          <q-checkbox
+            class="checkbox-delete-associated-alerts-pipelines"
+            v-model="deleteAssociatedAlertsPipelines"
+          />
           <span class="delete-associated-alerts-pipelines-text">
             Delete all pipelines and alerts associated with the stream
           </span>
-          </div>
-        <q-card-actions class="confirmActionsLogStream">
-          <q-btn v-close-popup="true" unelevated no-caps class="q-mr-sm">
+        </div>
+        <q-card-actions class="confirmActionsLogStream tw:gap-2">
+          <OButton
+            variant="outline"
+            size="sm-action"
+            @click="confirmDelete = false"
+          >
             {{ t("logStream.cancel") }}
-          </q-btn>
-          <q-btn
-            v-close-popup="true"
-            unelevated
-            no-caps
-            class="no-border"
-            color="primary"
-            @click="deleteStream"
+          </OButton>
+          <OButton
+            variant="destructive"
+            size="sm-action"
+            @click="
+              () => {
+                deleteStream();
+                confirmDelete = false;
+              }
+            "
           >
             {{ t("logStream.ok") }}
-          </q-btn>
+          </OButton>
         </q-card-actions>
       </q-card>
     </q-dialog>
+
     <q-dialog v-model="confirmBatchDelete">
-      <q-card style="width: 420px">
+      <q-card style="width: 420px; max-width: 95vw">
         <q-card-section class="confirmBodyLogStream">
           <div class="head">{{ t("logStream.confirmBatchDeleteHead") }}</div>
           <div class="para">{{ t("logStream.confirmBatchDeleteMsg") }}</div>
         </q-card-section>
-        <div class="tw:w-full tw:flex tw:justify-center tw:items-center tw:text-sm tw:text-gray-500">
-            <q-checkbox class="checkbox-delete-associated-alerts-pipelines" v-model="deleteAssociatedAlertsPipelines" />
+        <div
+          class="tw:w-full tw:flex tw:justify-center tw:items-center tw:text-sm tw:text-gray-500"
+        >
+          <q-checkbox
+            class="checkbox-delete-associated-alerts-pipelines"
+            v-model="deleteAssociatedAlertsPipelines"
+          />
           <span class="delete-associated-alerts-pipelines-text">
             Delete all pipelines and alerts associated with the selected streams
           </span>
-          </div>
-        <q-card-actions class="confirmActionsLogStream">
-          <q-btn v-close-popup="true" unelevated no-caps class="q-mr-sm">
+        </div>
+        <q-card-actions class="confirmActionsLogStream tw:gap-2">
+          <OButton
+            variant="outline"
+            size="sm-action"
+            @click="confirmBatchDelete = false"
+          >
             {{ t("logStream.cancel") }}
-          </q-btn>
-          <q-btn
-            v-close-popup="true"
-            unelevated
-            no-caps
-            class="no-border"
-            color="primary"
-            @click="deleteBatchStream"
+          </OButton>
+          <OButton
+            variant="destructive"
+            size="sm-action"
+            @click="
+              () => {
+                deleteBatchStream();
+                confirmBatchDelete = false;
+              }
+            "
           >
             {{ t("logStream.ok") }}
-          </q-btn>
+          </OButton>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -335,6 +416,7 @@ import {
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import { useQuasar, type QTableProps } from "quasar";
+import { useScreen } from "@/composables/useScreen";
 import { useI18n } from "vue-i18n";
 
 import QTablePagination from "../components/shared/grid/Pagination.vue";
@@ -348,16 +430,46 @@ import {
   formatSizeFromMB,
 } from "../utils/zincutils";
 import config from "@/aws-exports";
-import { outlinedDelete } from "@quasar/extras/material-icons-outlined";
 import { cloneDeep } from "lodash-es";
 import useStreams from "@/composables/useStreams";
 import AddStream from "@/components/logstream/AddStream.vue";
 import { watch } from "vue";
-import AppTabs from "@/components/common/AppTabs.vue";
+import OButton from "@/lib/core/Button/OButton.vue";
+import {
+  Search,
+  FileText,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-vue-next";
+import OToggleGroup from "@/lib/core/ToggleGroup/OToggleGroup.vue";
+import OToggleGroupItem from "@/lib/core/ToggleGroup/OToggleGroupItem.vue";
+import { ScrollText, BarChart2, GitFork, Info } from "lucide-vue-next";
 import { useReo } from "@/services/reodotdev_analytics";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import MobileStreamCard from "@/components/logstream/MobileStreamCard.vue";
 export default defineComponent({
   name: "PageLogStream",
-  components: { QTablePagination, SchemaIndex, NoData, AddStream, AppTabs, },
+  components: {
+    QTablePagination,
+    SchemaIndex,
+    NoData,
+    AddStream,
+    PullToRefreshWrapper,
+    MobileStreamCard,
+    OButton,
+    OToggleGroup,
+    OToggleGroupItem,
+    ScrollText,
+    BarChart2,
+    GitFork,
+    Info,
+    Search,
+    FileText,
+    Trash2,
+    ChevronLeft,
+    ChevronRight,
+  },
   emits: ["update:changeRecordPerPage", "update:maxRecordToReturn"],
   setup(props, { emit }) {
     const store = useStore();
@@ -406,12 +518,7 @@ export default defineComponent({
 
     const pageRecordsPerPage = ref(pagination.value.rowsPerPage);
 
-    const streamTabs = [
-      { label: t("logStream.labelLogs"), value: "logs" },
-      { label: t("logStream.labelMetrics"), value: "metrics" },
-      { label: t("logStream.labelTraces"), value: "traces" },
-      { label: t("logStream.labelMetadata"), value: "metadata" },
-    ];
+    const streamTabs: never[] = [];
     const {
       getStreams,
       resetStreams,
@@ -539,22 +646,23 @@ export default defineComponent({
     // );
 
     const getLogStream = (refresh: boolean = false) => {
-      if (store.state.selectedOrganization != null) {
-        loadingState.value = true;
-        previousOrgIdentifier.value =
-          store.state.selectedOrganization.identifier;
-        const dismiss = $q.notify({
-          spinner: true,
-          message: "Please wait while loading streams...",
-        });
-        logStream.value = [];
+      if (store.state.selectedOrganization == null) return Promise.resolve();
 
-        let counter = 1 + pageOffset.value;
-        let streamResponse;
-        // if(selectedStreamType.value == "all") {
-        //   streamResponse = getStreams(selectedStreamType.value || "", false, false);
-        // } else {
-        streamResponse = getPaginatedStreams(
+      loadingState.value = true;
+      previousOrgIdentifier.value =
+        store.state.selectedOrganization.identifier;
+      const dismiss = $q.notify({
+        spinner: true,
+        message: "Please wait while loading streams...",
+      });
+      logStream.value = [];
+
+      let counter = 1 + pageOffset.value;
+      let streamResponse;
+      // if(selectedStreamType.value == "all") {
+      //   streamResponse = getStreams(selectedStreamType.value || "", false, false);
+      // } else {
+      streamResponse = getPaginatedStreams(
           selectedStreamType.value || "",
           false,
           false,
@@ -566,8 +674,8 @@ export default defineComponent({
         );
         // }
 
-        streamResponse
-          .then((res: any) => {
+      const streamPromise = streamResponse
+        .then((res: any) => {
             logStream.value = [];
             let doc_num = "";
             let storage_size = "";
@@ -613,24 +721,23 @@ export default defineComponent({
 
             dismiss();
           })
-          .catch((err) => {
-            if (err.response?.status != 403) {
-              $q.notify({
-                type: "negative",
-                message:
-                  err.response?.data?.message ||
-                  "Error while fetching streams.",
-                timeout: 2000,
-              });
-            }
-            loadingState.value = false;
-            dismiss();
-          })
-          .finally(() => {
-            loadingState.value = false;
-            dismiss();
-          });
-      }
+        .catch((err: any) => {
+          if (err.response?.status != 403) {
+            $q.notify({
+              type: "negative",
+              message:
+                err.response?.data?.message ||
+                "Error while fetching streams.",
+              timeout: 2000,
+            });
+          }
+          loadingState.value = false;
+          dismiss();
+        })
+        .finally(() => {
+          loadingState.value = false;
+          dismiss();
+        });
 
       segment.track("Button Click", {
         button: "Refresh Streams",
@@ -638,6 +745,8 @@ export default defineComponent({
         user_id: store.state.userInfo.email,
         page: "Streams",
       });
+
+      return streamPromise;
     };
 
     getLogStream();
@@ -676,7 +785,7 @@ export default defineComponent({
           store.state.selectedOrganization.identifier,
           deleteStreamName,
           deleteStreamType,
-          deleteAssociatedAlertsPipelines.value
+          deleteAssociatedAlertsPipelines.value,
         )
         .then((res: any) => {
           if (res.data.code == 200) {
@@ -712,7 +821,7 @@ export default defineComponent({
             store.state.selectedOrganization.identifier,
             stream.name,
             stream.stream_type,
-            deleteAssociatedAlertsPipelines.value
+            deleteAssociatedAlertsPipelines.value,
           ),
         );
       });
@@ -850,7 +959,9 @@ export default defineComponent({
           refresh: "0",
           query: "",
           type: "stream_explorer",
-          quick_mode: store.state.zoConfig.quick_mode_enabled ? "true" : "false",
+          quick_mode: store.state.zoConfig.quick_mode_enabled
+            ? "true"
+            : "false",
           org_identifier: store.state.selectedOrganization.identifier,
           ...dateTime,
         },
@@ -942,12 +1053,25 @@ export default defineComponent({
       streamActiveTab.value = tab;
       onChangeStreamFilter(tab);
     };
+
+    // Use cards up to the md breakpoint so tablets get the mobile layout too.
+    const { isMobileOrTablet: useCardLayout } = useScreen();
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await getLogStream(true);
+      } finally {
+        ack();
+      }
+    };
+
     const changePagination = (val: { label: string; value: any }) => {
       selectedPerPage.value = val.hasOwnProperty("value") ? val.value : val;
-      pagination.value.rowsPerPage = val.hasOwnProperty("value") ? val.value : val;
+      pagination.value.rowsPerPage = val.hasOwnProperty("value")
+        ? val.value
+        : val;
       pagination.value.page = 1; // Reset to first page when changing records per page
       qTable.value?.requestServerInteraction({
-        pagination: pagination.value
+        pagination: pagination.value,
       });
     };
 
@@ -976,7 +1100,6 @@ export default defineComponent({
       maxRecordToReturn,
       showIndexSchemaDialog,
       changeMaxRecordToReturn,
-      outlinedDelete,
       isSchemaUDSEnabled,
       filterQuery,
       filterData,
@@ -998,16 +1121,72 @@ export default defineComponent({
       filterLogStreamByTab,
       streamActiveTab,
       changePagination,
+      useCardLayout,
+      onMobileRefresh,
     };
   },
 });
 </script>
 
 <style lang="scss" scoped>
+@media (max-width: 1023px) {
+  // Let the action row wrap onto a second line and let the search field
+  // own the full remaining width; the "New stream" button no longer
+  // overlaps row 01 when the screen gets narrow (<600 px was the worst
+  // case, but the header still felt cramped up to the md breakpoint).
+  .log-stream-topbar__row {
+    flex-wrap: wrap;
+    height: auto !important;
+    row-gap: 8px;
+  }
+
+  .log-stream-topbar__actions {
+    flex-wrap: wrap;
+    width: 100%;
+    align-items: stretch;
+    gap: 8px;
+
+    > * {
+      flex: 0 0 auto;
+    }
+
+    [data-test="streams-search-stream-input"] {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+  }
+
+  .mobile-stream-list-wrap {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-stream-list-scroll {
+    height: calc(100vh - var(--navbar-height) - 126px - var(--o2-mobile-nav-height, 0px));
+  }
+
+  .mobile-stream-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px;
+  }
+
+  .mobile-stream-list-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--o2-text-secondary);
+  }
+
+  .mobile-stream-list-loading {
+    display: flex;
+    justify-content: center;
+    padding: 48px 16px;
+  }
+}
 </style>
 
 <style lang="scss">
-
 .bottom-bar {
   display: flex;
   width: 100%;
@@ -1034,7 +1213,7 @@ export default defineComponent({
   }
 }
 
-.delete-associated-alerts-pipelines-text{
+.delete-associated-alerts-pipelines-text {
   color: $light-text;
   font-size: 12px;
   font-weight: 500;
@@ -1044,20 +1223,15 @@ export default defineComponent({
   justify-content: center;
   padding: 16px 22px 22px;
   display: flex;
-
-  .q-btn {
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
 }
-.checkbox-delete-associated-alerts-pipelines{
-  .q-checkbox__inner{
+.checkbox-delete-associated-alerts-pipelines {
+  .q-checkbox__inner {
     height: 28px !important;
     min-height: 28px !important;
     width: 28px !important;
     min-width: 28px !important;
   }
-  .q-checkbox__bg{
+  .q-checkbox__bg {
     height: 16px !important;
     width: 16px !important;
   }

@@ -1,4 +1,4 @@
-<!-- Copyright 2026 OpenObserve Inc.
+﻿<!-- Copyright 2026 OpenObserve Inc.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     >
       <div class="card-container">
         <div
-          class="flex justify-between full-width tw:py-3 tw:mb-[0.625rem] tw:px-4 tw:h-[68px] items-center"
+          class="alert-list-toolbar flex justify-between full-width tw:py-3 tw:mb-[0.625rem] tw:px-4 tw:h-[68px] items-center"
         >
           <div class="tw:flex tw:items-center tw:gap-4">
             <div
@@ -36,14 +36,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </div>
           <div class="flex q-ml-auto tw:ps-2 items-center">
             <!-- Alert Tabs -->
-            <div class="app-tabs-container tw:h-[36px] q-mr-sm">
-              <app-tabs
-                class="tabs-selection-container"
-                :tabs="alertTabs"
-                v-model:active-tab="activeTab"
-                @update:active-tab="filterAlertsByTab"
-              />
-            </div>
+            <OToggleGroup
+              :model-value="activeTab"
+              @update:model-value="(v) => { activeTab = v; filterAlertsByTab(); }"
+              class="q-mr-sm"
+            >
+              <OToggleGroupItem value="all" size="sm" data-test="tab-all">
+                <template #icon-left><LayoutList class="tw:size-3.5 tw:shrink-0" /></template>
+                {{ t("alerts.all") }}
+              </OToggleGroupItem>
+              <OToggleGroupItem value="scheduled" size="sm" data-test="tab-scheduled">
+                <template #icon-left><CalendarClock class="tw:size-3.5 tw:shrink-0" /></template>
+                {{ t("alerts.scheduled") }}
+              </OToggleGroupItem>
+              <OToggleGroupItem value="realTime" size="sm" data-test="tab-realTime">
+                <template #icon-left><Zap class="tw:size-3.5 tw:shrink-0" /></template>
+                {{ t("alerts.realTime") }}
+              </OToggleGroupItem>
+              <OToggleGroupItem v-if="isAnomalyDetectionEnabled" value="anomalyDetection" size="sm" data-test="tab-anomalyDetection">
+                <template #icon-left><q-icon name="query_stats" size="14px" /></template>
+                {{ t("alerts.anomalyDetection") }}
+              </OToggleGroupItem>
+            </OToggleGroup>
             <!-- Search for Alerts -->
             <q-input
               v-model="dynamicQueryModel"
@@ -109,34 +123,45 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </q-tooltip>
             </div>
           </div>
-          <!-- Import button -->
+          <!-- Mobile: folder trigger -->
           <q-btn
+            v-if="isMobile"
+            class="q-ml-sm o2-secondary-button tw:h-[36px]"
+            no-caps
+            flat
+            icon="folder"
+            :label="activeFolderName"
+            @click="openMobileFolders"
+            data-test="alert-list-mobile-folders-btn"
+            aria-label="Open folders"
+          />
+          <!-- Import button -->
+          <OButton
             :class="[
-              'q-ml-sm o2-secondary-button tw:h-[36px]',
+              'q-ml-sm',
               isCompactToolbar
                 ? 'compact-icon-btn'
                 : '',
             ]"
-            no-caps
-            flat
-            :label="isCompactToolbar ? undefined : t(`dashboard.import`)"
-            icon="file_upload"
+            variant="outline"
+            size="sm"
             @click="importAlert"
             data-test="alert-import"
           >
+            <template #icon-left><q-icon name="file_upload" /></template>
+            <template v-if="!isCompactToolbar">{{ t(`dashboard.import`) }}</template>
             <q-tooltip v-if="isCompactToolbar">
               {{ t("dashboard.import") }}
             </q-tooltip>
-          </q-btn>
+          </OButton>
           <!-- Add button — routes to anomaly creation on anomaly tab, alert creation otherwise -->
-          <q-btn
+          <OButton
             data-test="alert-list-add-alert-btn"
-            class="q-ml-sm o2-primary-button tw:h-[36px]"
-            no-caps
-            flat
-            :disable="!destinations.length || !templates.length"
+            class="q-ml-sm"
+            variant="primary"
+            size="sm"
+            :disabled="!destinations.length || !templates.length"
             :title="!destinations.length ? t('alerts.noDestinations') : ''"
-            :label="t(`alerts.add`)"
             @click="
               activeTab === 'anomalyDetection'
                 ? router.push({
@@ -150,7 +175,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   })
                 : showAddUpdateFn({})
             "
-          />
+          >{{ t(`alerts.add`) }}</OButton>
         </div>
       </div>
     </div>
@@ -161,14 +186,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     >
       <!-- Alerts View (with folders) -->
       <q-splitter
-        v-model="splitterModel"
+        v-model="effectiveSplitterModel"
         unit="px"
-        :limits="[200, 500]"
+        :limits="isMobile ? [0, 0] : [200, 500]"
+        :class="{ 'alert-list-splitter-mobile': isMobile }"
         style="height: calc(100vh - 118px)"
         data-test="alert-list-splitter"
       >
         <template #before>
-          <div class="tw:w-full tw:h-full tw:pl-[0.625rem] tw:pb-[0.625rem]">
+          <div
+            v-if="!isMobile"
+            class="tw:w-full tw:h-full tw:pl-[0.625rem] tw:pb-[0.625rem]"
+          >
             <div class="tw:h-full">
               <FolderList
                 type="alerts"
@@ -180,8 +209,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <template #after>
           <div class="tw:w-full tw:h-full tw:pr-[0.625rem] tw:pb-[0.625rem]">
             <div class="tw:h-full card-container">
-              <!-- Alert List Table (shows all alert types including anomaly detection rows) -->
+              <!-- Mobile: card list (replaces multi-column table on <600px) -->
+              <PullToRefreshWrapper
+                v-if="isMobile"
+                class="mobile-alert-list"
+                data-test="alert-list-mobile"
+                @refresh="onMobileRefresh"
+              >
+                <MobileCardSkeleton
+                  v-if="isInitialLoading && !filteredResults?.length"
+                  :count="5"
+                  data-test="alert-list-mobile-skeleton"
+                />
+                <div
+                  v-else-if="!filteredResults?.length"
+                  class="mobile-alert-list__empty"
+                >
+                  <NoData />
+                </div>
+                <MobileAlertCard
+                  v-for="row in filteredResults"
+                  :key="row.alert_id || row.name"
+                  :row="row"
+                  @click="editAlert"
+                  @edit="editAlert"
+                  @toggle="toggleAlertState"
+                  @clone="duplicateAlert"
+                  @move="moveAlertToAnotherFolder"
+                  @trigger="triggerAlert"
+                  @delete="(row) => showDeleteDialogFn({ row })"
+                />
+              </PullToRefreshWrapper>
+              <!-- Desktop: multi-column Alert List Table -->
               <q-table
+                v-else
                 v-model:selected="selectedAlerts"
                 :selected-rows-label="getSelectedString"
                 selection="multiple"
@@ -205,6 +266,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <q-th auto-width>
                       <q-checkbox
                         v-model="props.selected"
+                        data-test="alert-list-select-all-checkbox"
                         size="sm"
                         class="o2-table-checkbox"
                         @update:model-value="props.select"
@@ -382,21 +444,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                               color="secondary"
                             />
                           </div>
-                          <q-btn
+                          <OButton
                             v-else
                             :data-test="`alert-list-${props.row.name}-pause-start-alert`"
                             class="q-ml-xs material-symbols-outlined"
-                            padding="sm"
-                            unelevated
-                            size="sm"
-                            :color="props.row.enabled ? 'negative' : 'positive'"
-                            :icon="
-                              props.row.enabled
-                                ? outlinedPause
-                                : outlinedPlayArrow
-                            "
-                            round
-                            flat
+                            :variant="props.row.enabled ? 'ghost-destructive' : 'ghost'"
+                            size="icon-circle-sm"
                             :title="
                               props.row.enabled
                                 ? t('alerts.pause')
@@ -404,40 +457,36 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                             "
                             @click.stop="toggleAlertState(props.row)"
                           >
-                          </q-btn>
-                          <q-btn
+                            <q-icon :name="props.row.enabled ? outlinedPause : outlinedPlayArrow" />
+                          </OButton>
+                          <OButton
                             :data-test="`alert-list-${props.row.name}-update-alert`"
-                            unelevated
-                            size="sm"
-                            round
-                            flat
+                            variant="ghost"
+                            size="icon-circle-sm"
                             :title="t('alerts.edit')"
                             @click.stop="editAlert(props.row)"
-                            icon="edit"
                           >
-                          </q-btn>
-                          <q-btn
-                            icon="content_copy"
+                            <q-icon name="edit" />
+                          </OButton>
+                          <OButton
                             :title="t('alerts.clone')"
-                            unelevated
-                            size="sm"
-                            round
-                            flat
+                            variant="ghost"
+                            size="icon-circle-sm"
                             @click.stop="duplicateAlert(props.row)"
                             :data-test="`alert-list-${props.row.name}-clone-alert`"
                           >
-                          </q-btn>
-                          <q-btn
-                            :icon="outlinedMoreVert"
-                            unelevated
-                            size="sm"
-                            round
-                            flat
-                            @click.stop="openMenu($event, props.row)"
-                            :data-test="`alert-list-${props.row.name}-more-options`"
-                          >
-                            <q-menu>
-                              <q-list style="min-width: 100px">
+                            <q-icon name="content_copy" />
+                          </OButton>
+                          <span>
+                            <OButton
+                              variant="ghost"
+                              size="icon-circle-sm"
+                              @click.stop="openMenu($event, props.row)"
+                              :data-test="`alert-list-${props.row.name}-more-options`"
+                            >
+                              <q-icon :name="outlinedMoreVert" />
+                              <q-menu>
+                                <q-list style="min-width: 100px">
                                 <q-item
                                   class="flex items-center"
                                   clickable
@@ -520,6 +569,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                                   class="flex items-center justify-center"
                                   clickable
                                   v-close-popup
+                                  :data-test="`alert-list-${props.row.name}-trigger-alert`"
                                   @click="triggerAlert(props.row)"
                                 >
                                   <q-item-section dense avatar>
@@ -534,7 +584,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                                 </q-item>
                               </q-list>
                             </q-menu>
-                          </q-btn>
+                            </OButton>
+                          </span>
                         </div>
                       </template>
                       <template v-else>
@@ -558,16 +609,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           To create an Alert, you'll need to have at least one
                           Destination and one Template in place
                         </div>
-                        <q-btn
+                        <OButton
                           data-test="alert-list-create-template-btn"
                           class="q-mt-md"
-                          label="Create Template"
-                          size="md"
-                          color="primary"
-                          no-caps
-                          style="border-radius: 4px"
+                          variant="primary"
+                          size="sm"
                           @click="routeTo('alertTemplates')"
-                        />
+                        >Create Template</OButton>
                       </template>
                       <template v-if="!destinations.length && templates.length">
                         <div
@@ -578,16 +626,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                           yet. To create an Alert, you'll need to have at least
                           one Destination and one Template in place
                         </div>
-                        <q-btn
+                        <OButton
                           data-test="alert-list-create-destination-btn"
                           class="q-mt-md"
-                          label="Create Destination"
-                          size="md"
-                          color="primary"
-                          no-caps
-                          style="border-radius: 4px"
+                          variant="primary"
+                          size="sm"
                           @click="routeTo('alertDestinations')"
-                        />
+                        >Create Destination</OButton>
                       </template>
                     </div>
                   </div>
@@ -626,82 +671,61 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       {{ resultTotal }} {{ t("alerts.header") }}
                     </div>
 
-                    <q-btn
+                    <OButton
                       v-if="selectedAlerts.length > 0"
                       data-test="alert-list-move-across-folders-btn"
-                      class="flex items-center q-mr-sm no-border o2-secondary-button tw:h-[36px]"
-                      :class="
-                        store.state.theme === 'dark'
-                          ? 'o2-secondary-button-dark'
-                          : 'o2-secondary-button-light'
-                      "
-                      no-caps
-                      dense
+                      variant="outline"
+                      size="sm"
+                      class="q-mr-sm"
                       @click="moveMultipleAlerts"
                     >
                       <q-icon :name="outlinedDriveFileMove" size="16px" />
                       <span class="tw:ml-2">Move</span>
-                    </q-btn>
-                    <q-btn
+                    </OButton>
+                    <OButton
                       v-if="selectedAlerts.length > 0"
                       data-test="alert-list-export-alerts-btn"
-                      class="flex items-center q-mr-sm no-border o2-secondary-button tw:h-[36px]"
-                      :class="
-                        store.state.theme === 'dark'
-                          ? 'o2-secondary-button-dark'
-                          : 'o2-secondary-button-light'
-                      "
-                      no-caps
-                      dense
+                      variant="outline"
+                      size="sm"
+                      class="q-mr-sm"
                       @click="multipleExportAlert"
                     >
                       <q-icon name="download" size="16px" />
                       <span class="tw:ml-2">Export</span>
-                    </q-btn>
-                    <q-btn
+                    </OButton>
+                    <OButton
                       v-if="selectedAlerts.length > 0"
                       data-test="alert-list-pause-alerts-btn"
-                      class="flex items-center q-mr-sm no-border o2-secondary-button tw:h-[36px]"
-                      :class="
-                        store.state.theme === 'dark'
-                          ? 'o2-secondary-button-dark'
-                          : 'o2-secondary-button-light'
-                      "
-                      no-caps
-                      dense
+                      variant="outline"
+                      size="sm"
+                      class="q-mr-sm"
                       @click="bulkToggleAlerts('pause')"
                     >
                       <q-icon name="pause" size="16px" />
                       <span class="tw:ml-2">Pause</span>
-                    </q-btn>
-                    <q-btn
+                    </OButton>
+                    <OButton
                       v-if="selectedAlerts.length > 0"
                       data-test="alert-list-unpause-alerts-btn"
-                      class="tw:flex items-center no-border o2-secondary-button tw:h-[36px] q-mr-sm tw:w-[200px]"
-                      no-caps
-                      dense
-                      style="width: 170px"
+                      variant="outline"
+                      size="sm"
+                      class="q-mr-sm"
                       @click="bulkToggleAlerts('resume')"
                     >
                       <q-icon name="play_arrow" size="16px" />
                       <span class="tw:ml-2">Resume</span>
-                    </q-btn>
-                    <q-btn
+                    </OButton>
+                    <OButton
                       v-if="selectedAlerts.length > 0"
                       data-test="alert-list-delete-alerts-btn"
-                      class="tw:flex items-center q-mr-sm no-border o2-secondary-button tw:h-[36px] tw:ml-sm"
-                      :class="
-                        store.state.theme === 'dark'
-                          ? 'o2-secondary-button-dark'
-                          : 'o2-secondary-button-light'
-                      "
-                      no-caps
-                      dense
+                      variant="outline"
+                      size="sm"
+                      class="q-mr-sm"
                       @click="openBulkDeleteDialog"
                     >
                       <q-icon name="delete" size="16px" />
                       <span class="tw:ml-2">Delete</span>
-                    </q-btn>
+                    </OButton>
                     <QTablePagination
                       :scope="scope"
                       :position="'bottom'"
@@ -744,6 +768,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         @update:templates="getTemplates"
       />
     </template>
+
+    <!-- Mobile: folders side-sheet -->
+    <q-dialog
+      v-if="isMobile"
+      v-model="showMobileFolders"
+      v-bind="folderSheetDialogProps"
+      aria-label="Folders"
+    >
+      <q-card
+        class="mobile-folder-sheet"
+        style="width: 85vw; max-width: 360px; height: 100%"
+      >
+        <div class="mobile-folder-sheet__body tw:h-full tw:p-[0.625rem]">
+          <FolderList
+            type="alerts"
+            @update:activeFolderId="onMobileFolderSelect"
+          />
+        </div>
+      </q-card>
+    </q-dialog>
 
     <ConfirmDialog
       title="Delete Alert"
@@ -832,23 +876,20 @@ persistent>
                   :activeFolderId="folderIdToBeCloned"
                 />
               </div>
-              <div class="flex justify-end q-mt-sm">
-                <q-btn
+              <div class="flex justify-end tw:gap-2 q-mt-sm">
+                <OButton
                   data-test="clone-alert-cancel-btn"
                   v-close-popup="true"
-                  class="o2-secondary-button tw:h-[36px]"
-                  :label="t('alerts.cancel')"
-                  text-color="light-text"
-                  no-caps
-                />
-                <q-btn
+                  variant="outline"
+                  size="sm-action"
+                >{{ t('alerts.cancel') }}</OButton>
+                <OButton
                   data-test="clone-alert-submit-btn"
-                  :label="t('alerts.save')"
-                  class="o2-primary-button tw:h-[36px] q-ml-md"
+                  variant="primary"
+                  size="sm-action"
                   type="submit"
-                  :disable="isSubmitting"
-                  no-caps
-                />
+                  :disabled="isSubmitting"
+                >{{ t('alerts.save') }}</OButton>
               </div>
             </q-form>
           </q-card-section>
@@ -891,6 +932,7 @@ persistent>
 </template>
 
 <script lang="ts">
+
 import {
   defineComponent,
   ref,
@@ -936,15 +978,23 @@ import {
   outlinedMoreVert,
 } from "@quasar/extras/material-icons-outlined";
 import FolderList from "../common/sidebar/FolderList.vue";
+import MobileAlertCard from "./MobileAlertCard.vue";
+import PullToRefreshWrapper from "@/components/shared/PullToRefreshWrapper.vue";
+import MobileCardSkeleton from "@/components/shared/MobileCardSkeleton.vue";
+import { useScreen } from "@/composables/useScreen";
+import { useResponsiveDialog } from "@/composables/useResponsiveDialog";
 
 import MoveAcrossFolders from "../common/sidebar/MoveAcrossFolders.vue";
 import { toRaw } from "vue";
 import { nextTick } from "vue";
-import AppTabs from "@/components/common/AppTabs.vue";
 import SelectFolderDropDown from "../common/sidebar/SelectFolderDropDown.vue";
+import OToggleGroup from "@/lib/core/ToggleGroup/OToggleGroup.vue";
+import OToggleGroupItem from "@/lib/core/ToggleGroup/OToggleGroupItem.vue";
+import { LayoutList, CalendarClock, Zap, TrendingUp } from "lucide-vue-next";
 import anomalyDetectionService from "@/services/anomaly_detection";
 import AlertHistoryDrawer from "@/components/alerts/AlertHistoryDrawer.vue";
 import { symOutlinedSoundSampler } from "@quasar/extras/material-symbols-outlined";
+import OButton from '@/lib/core/Button/OButton.vue';
 import O2AIContextAddBtn from "@/components/common/O2AIContextAddBtn.vue";
 import { buildConditionsString } from "@/utils/alerts/conditionsFormatter";
 // import alertList from "./alerts";
@@ -961,11 +1011,20 @@ export default defineComponent({
     ImportAlert,
     DedupSummaryCards,
     FolderList,
+    MobileAlertCard,
+    PullToRefreshWrapper,
+    MobileCardSkeleton,
     MoveAcrossFolders,
-    AppTabs,
+    OToggleGroup,
+    OToggleGroupItem,
+    LayoutList,
+    CalendarClock,
+    Zap,
+    TrendingUp,
     SelectFolderDropDown,
     AlertHistoryDrawer,
     O2AIContextAddBtn,
+    OButton,
   },
   emits: [
     "updated:fields",
@@ -995,12 +1054,43 @@ export default defineComponent({
     const isUpdated: any = ref(false);
     const confirmDelete = ref<boolean>(false);
     const splitterModel = ref(200);
+    const { isMobile } = useScreen();
+    const { dialogProps: folderSheetDialogProps } = useResponsiveDialog({
+      mobileMode: "slide-left",
+    });
+    const showMobileFolders = ref(false);
+    const effectiveSplitterModel = computed({
+      get: () => (isMobile.value ? 0 : splitterModel.value),
+      set: (v: number) => {
+        if (!isMobile.value) splitterModel.value = v;
+      },
+    });
+    const openMobileFolders = () => {
+      showMobileFolders.value = true;
+    };
+    const onMobileFolderSelect = (folderId: string) => {
+      // FolderList emits update:activeFolderId on mount, which would
+      // immediately close the dialog right after it opened. Only close on a
+      // real user-driven selection (folderId changed from the current value).
+      const changed = folderId !== activeFolderId.value;
+      updateActiveFolderId(folderId);
+      if (changed) showMobileFolders.value = false;
+    };
+    const activeFolderName = computed(() => {
+      const folders =
+        store.state.organizationData?.foldersByType?.["alerts"] || [];
+      const match = folders.find(
+        (f: any) => f.folderId === activeFolderId.value,
+      );
+      return match?.name || activeFolderId.value || "";
+    });
     const showForm = ref(false);
     const indexOptions = ref([]);
     const schemaList = ref([]);
     const streams: any = ref({});
     const isFetchingStreams = ref(false);
     const isSubmitting = ref(false);
+    const isInitialLoading = ref(true);
 
     // Compact toolbar: icon-only buttons when AI sidebar is open at narrow widths
     const windowWidth = ref(window.innerWidth);
@@ -1611,6 +1701,8 @@ export default defineComponent({
           message: "Error while pulling alerts.",
           timeout: 2000,
         });
+      } finally {
+        isInitialLoading.value = false;
       }
     };
     const getAlertById = async (id: string) => {
@@ -2070,6 +2162,13 @@ export default defineComponent({
         });
       } catch (error) {
         console.error("Navigation failed:", error);
+      }
+    };
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await refreshList();
+      } finally {
+        ack();
       }
     };
     const refreshList = async (folderId?: string) => {
@@ -2928,6 +3027,7 @@ export default defineComponent({
       pagination,
       resultTotal,
       refreshList,
+      onMobileRefresh,
       perPageOptions,
       selectedPerPage,
       addAlert,
@@ -2953,6 +3053,7 @@ export default defineComponent({
       streams,
       isFetchingStreams,
       isSubmitting,
+      isInitialLoading,
       changeMaxRecordToReturn,
       outlinedDelete,
       filterQuery,
@@ -2972,6 +3073,13 @@ export default defineComponent({
       verifyOrganizationStatus,
       folders,
       splitterModel,
+      isMobile,
+      showMobileFolders,
+      effectiveSplitterModel,
+      openMobileFolders,
+      onMobileFolderSelect,
+      activeFolderName,
+      folderSheetDialogProps,
       outlinedPause,
       outlinedPlayArrow,
       toggleAlertState,
@@ -3036,6 +3144,7 @@ export default defineComponent({
       symOutlinedSoundSampler,
       config,
       isCompactToolbar,
+      isAnomalyDetectionEnabled,
     };
   },
 });
@@ -3047,11 +3156,11 @@ export default defineComponent({
 
   // Customize app-tabs for view mode switching
   ::v-deep .app-tabs {
-    .q-tabs {
+    .o-tabs {
       min-height: 36px;
     }
 
-    .q-tab {
+    .o-tab {
       padding: 0 20px;
       min-height: 36px;
       text-transform: none;
@@ -3196,6 +3305,62 @@ export default defineComponent({
   }
   :deep(.q-toggle__label) {
     margin-top: 2px !important;
+  }
+}
+
+// Mobile: collapse the folders splitter pane and hide its separator.
+// Folders are accessed via the mobile header trigger + side-sheet dialog.
+// The mobile list fills its parent (splitter after-slot, height already
+// bounded by .alert-list-table). Using 100% here avoids a magic viewport
+// subtraction that would break when the header toolbar wraps to 2+ rows.
+.mobile-alert-list {
+  height: 100%;
+  padding: 8px 8px 80px 8px;
+  overflow-y: auto;
+
+  &__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+  }
+}
+
+.alert-list-splitter-mobile {
+  :deep(.q-splitter__before) {
+    display: none !important;
+  }
+  :deep(.q-splitter__separator) {
+    display: none !important;
+  }
+  :deep(.q-splitter__after) {
+    width: 100% !important;
+  }
+}
+
+// Mobile: let the header toolbar grow instead of clipping to its
+// fixed desktop height. The toolbar wraps to two rows on small
+// screens; without this override the second row renders under the
+// table's sticky header.
+@media (max-width: 599px) {
+  [data-test="alert-list-page"] {
+    .alert-list-toolbar {
+      height: auto !important;
+      min-height: 52px;
+      padding-top: 0.5rem !important;
+      padding-bottom: 0.5rem !important;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .alert-list-table {
+      height: auto !important;
+      min-height: calc(100vh - 200px);
+    }
+    // Alerts page inner chrome is noisy on mobile — tighten paddings.
+    .card-container {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
   }
 }
 </style>
