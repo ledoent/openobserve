@@ -24,10 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <router-link
       v-for="item in primaryItems"
       :key="item.name"
-      :to="{
-        path: item.link,
-        query: { org_identifier: orgIdentifier },
-      }"
+      :to="
+        orgIdentifier
+          ? { path: item.link, query: { org_identifier: orgIdentifier } }
+          : { path: item.link }
+      "
       class="mobile-bottom-nav__item"
       :class="{
         'mobile-bottom-nav__item--active': isItemActive(item),
@@ -46,7 +47,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       :class="{ 'mobile-bottom-nav__item--active': showMoreSheet }"
       @click="onMoreClick"
       aria-label="More navigation options"
-      :aria-expanded="String(showMoreSheet)"
+      :aria-expanded="showMoreSheet"
     >
       <q-icon name="more_horiz" size="22px" />
       <span class="mobile-bottom-nav__label">{{ t("common.more") }}</span>
@@ -125,10 +126,12 @@ export default defineComponent({
       return visibleLinks.value.filter((l) => !primarySet.has(l.name));
     });
 
+    // Exact match for "/" and exact-or-trailing-slash match elsewhere so
+    // sibling routes like /logs and /logstreams don't both highlight.
     const isItemActive = (item: NavItem) => {
       const path = router.currentRoute.value.path;
       if (item.link === "/") return path === "/";
-      return path.startsWith(item.link);
+      return path === item.link || path.startsWith(item.link + "/");
     };
 
     const onTabClick = (item: NavItem) => {

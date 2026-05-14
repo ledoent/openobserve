@@ -112,3 +112,135 @@ describe("MobileBottomNav haptics", () => {
     expect(vibrateSpy).toHaveBeenCalledWith("selection");
   });
 });
+
+describe("MobileBottomNav active-state", () => {
+  beforeEach(() => {
+    vibrateSpy.mockReset();
+  });
+
+  // /logs vs /logstreams collision: prefix matching without a trailing-slash
+  // guard would incorrectly highlight the Logs tab on the LogStreams page.
+  it("uses exact-or-trailing-slash matching for active state", async () => {
+    const router = makeRouter();
+    router.addRoute({
+      path: "/logstreams",
+      component: { template: "<div/>" },
+      name: "logstreams",
+    });
+    const store = makeStore();
+    await router.push("/logstreams");
+    const wrapper = mount(MobileBottomNav, {
+      props: { links },
+      global: { plugins: [Quasar, store, router, i18n] },
+    });
+
+    const logsTab = wrapper.find('[aria-label="Logs"]');
+    expect(logsTab.classes()).not.toContain("mobile-bottom-nav__item--active");
+  });
+
+  it("recomputes the active tab when the route changes", async () => {
+    const router = makeRouter();
+    const store = makeStore();
+    await router.push("/logs");
+    const wrapper = mount(MobileBottomNav, {
+      props: { links },
+      global: { plugins: [Quasar, store, router, i18n] },
+    });
+
+    expect(wrapper.find('[aria-label="Logs"]').classes()).toContain(
+      "mobile-bottom-nav__item--active",
+    );
+
+    await router.push("/dashboards");
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('[aria-label="Logs"]').classes()).not.toContain(
+      "mobile-bottom-nav__item--active",
+    );
+    expect(wrapper.find('[aria-label="Dashboards"]').classes()).toContain(
+      "mobile-bottom-nav__item--active",
+    );
+  });
+});
+
+describe("MobileBottomNav overflow sheet", () => {
+  beforeEach(() => {
+    vibrateSpy.mockReset();
+  });
+
+  const linksWithOverflow = [
+    ...links,
+    {
+      title: "Settings",
+      icon: "settings",
+      link: "/settings",
+      name: "settings",
+      display: true,
+    },
+  ];
+
+  it("opens the More sheet when the More button is tapped", async () => {
+    const router = makeRouter();
+    const store = makeStore();
+    const wrapper = mount(MobileBottomNav, {
+      props: { links: linksWithOverflow },
+      global: { plugins: [Quasar, store, router, i18n] },
+    });
+
+    expect(wrapper.vm.showMoreSheet).toBe(false);
+    await wrapper
+      .find('[aria-label="More navigation options"]')
+      .trigger("click");
+    expect(wrapper.vm.showMoreSheet).toBe(true);
+  });
+
+  it("classifies non-primary links as overflow items", () => {
+    const router = makeRouter();
+    const store = makeStore();
+    const wrapper = mount(MobileBottomNav, {
+      props: { links: linksWithOverflow },
+      global: { plugins: [Quasar, store, router, i18n] },
+    });
+
+    const overflowNames = wrapper.vm.overflowItems.map((i: any) => i.name);
+    expect(overflowNames).toEqual(["settings"]);
+  });
+});
+
+describe("MobileBottomNav org-identifier handling", () => {
+  // selectedOrganization can be null during early hydration / sign-out;
+  // the component should still render and omit org_identifier from the
+  // router-link query rather than serialize `undefined`.
+  it("renders without crashing when selectedOrganization is null", async () => {
+    const router = makeRouter();
+    const store = createStore({
+      state: {
+        selectedOrganization: null,
+      },
+    });
+    expect(() =>
+      mount(MobileBottomNav, {
+        props: { links },
+        global: { plugins: [Quasar, store, router, i18n] },
+      }),
+    ).not.toThrow();
+  });
+
+  it("omits org_identifier from router-link query when no org is selected", () => {
+    const router = makeRouter();
+    const store = createStore({
+      state: {
+        selectedOrganization: null,
+      },
+    });
+    const wrapper = mount(MobileBottomNav, {
+      props: { links },
+      global: { plugins: [Quasar, store, router, i18n] },
+    });
+
+    const hrefs = wrapper
+      .findAll("a")
+      .map((a) => a.attributes("href") ?? "");
+    expect(hrefs.every((h) => !h.includes("org_identifier"))).toBe(true);
+  });
+});
