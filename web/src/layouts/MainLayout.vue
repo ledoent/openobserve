@@ -86,7 +86,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         v-show="isLoading"
         :style="{
           width:
-            !isMobile && store.state.isAiChatEnabled ? '75%' : '100%',
+            !isMobile &&
+            store.state.isAiChatEnabled &&
+            !store.state.isAiChatExpanded
+              ? '75%'
+              : '100%',
         }"
         :key="store.state.selectedOrganization?.identifier"
       >
@@ -197,7 +201,6 @@ import {
 import {
   ref,
   defineComponent,
-  defineAsyncComponent,
   KeepAlive,
   computed,
   onMounted,
@@ -247,7 +250,7 @@ import organizations from "@/services/organizations";
 import useStreams from "@/composables/useStreams";
 import { openobserveRum } from "@openobserve/browser-rum";
 import useSearchWebSocket from "@/composables/useSearchWebSocket";
-const O2AIChat = defineAsyncComponent(() => import("@/components/O2AIChat.vue"));
+import O2AIChat from "@/components/O2AIChat.vue";
 import WebinarBanner from "@/components/WebinarBanner.vue";
 import useRoutePrefetch from "@/composables/useRoutePrefetch";
 import { useScreen } from "@/composables/useScreen";
