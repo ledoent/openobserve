@@ -11,7 +11,9 @@
 #   1. `fork main` — strict upstream mirror, updated daily by
 #      `sync-upstream.yml`. Forms the base tree.
 #   2. `fork ledoent` — this branch (CI, repos.yaml, dev-proxy chore).
-#   3. `fork mobile-ui-upstream` — PR #3 feature branch (mobile UX).
+#   3. `fork upstream/mobile-friendly-ui` — upstream PR #11834 (mobile UX
+#      foundation + shell + card lists; supersedes mobile-ui-upstream as
+#      the prod-rotation source; temporary, remove once merged upstream).
 #   4. `fork fix/sql-aggregate-columns` — PR #4 SQL aggregate column fix
 #      (temporary, remove once PR is merged upstream).
 #   5. `fork upstream/fix-audit-ignore-yanked-deps` — upstream PR #11832
@@ -20,6 +22,12 @@
 #   6. `fork upstream/fix-orphan-generate-unit-tests-workflow` — upstream
 #      PR #11833 (CI noise removal; temporary, remove once merged
 #      upstream).
+#
+# NOTE: `fork mobile-ui-upstream` (former staging branch / fork PR #3)
+# is intentionally NOT in this list. Its content lives on
+# upstream/mobile-friendly-ui above. The staging branch remains on the
+# fork as a historical record; swap the two lines here to roll prod
+# back to the staging version if ever needed.
 #
 # The push to `build/deploy` triggers `ledoent-build.yml`, which produces
 # `v0.70.0-mobile-<shortsha>` in GAR. Milestone tags (e.g. `-r2`) are cut
@@ -32,7 +40,7 @@
   merges:
     - fork main
     - fork ledoent
-    - fork mobile-ui-upstream
+    - fork upstream/mobile-friendly-ui
     - fork fix/sql-aggregate-columns
     - fork upstream/fix-audit-ignore-yanked-deps
     - fork upstream/fix-orphan-generate-unit-tests-workflow
