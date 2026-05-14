@@ -121,7 +121,7 @@ impl FieldAlias {
     /// `o2-enterprise/o2_enterprise/src/enterprise/alerts/default_semantic_groups.json`
     ///
     /// Enterprise code should call
-    /// `o2_enterprise::enterprise::alerts::semantic_config::load_defaults_from_file()`
+    /// `o2_enterprise::enterprise::common::semantic_config::load_defaults_from_file()`
     /// instead.
     #[allow(dead_code)]
     pub fn default_presets() -> Vec<Self> {
@@ -132,7 +132,7 @@ impl FieldAlias {
     ///
     /// For OSS builds, this returns the minimal preset.
     /// For enterprise builds with full JSON, call
-    /// `o2_enterprise::enterprise::alerts::semantic_config::load_defaults_from_file()`
+    /// `o2_enterprise::enterprise::common::semantic_config::load_defaults_from_file()`
     /// instead.
     pub fn load_defaults_from_file() -> Vec<Self> {
         // OSS fallback: return minimal preset
@@ -217,6 +217,14 @@ pub struct ServiceIdentityConfig {
     /// The "service" group is always tracked implicitly and must NOT be listed here.
     #[serde(default)]
     pub tracked_alias_ids: Vec<String>,
+
+    /// When true, correlation matches streams to services without requiring the `service`
+    /// dimension. Useful when some streams (e.g. metrics) lack `service.name` but share
+    /// infrastructure attributes (e.g. `k8s-namespace`) with streams that do (e.g. logs).
+    /// Trade-off: multiple services in the same namespace/cluster can collapse into one
+    /// correlated bucket. Defaults to false (current behavior preserved).
+    #[serde(default)]
+    pub service_optional: bool,
 }
 
 impl ServiceIdentityConfig {
@@ -235,6 +243,7 @@ impl ServiceIdentityConfig {
         Self {
             sets: vec![],
             tracked_alias_ids: vec![],
+            service_optional: false,
         }
     }
 
@@ -408,6 +417,7 @@ mod tests {
         let cfg = ServiceIdentityConfig {
             sets: vec![make_set("k8s", "Kubernetes", &["k8s-cluster"])],
             tracked_alias_ids: vec!["k8s-cluster".to_string()],
+            ..Default::default()
         };
         assert!(cfg.validate().is_ok());
     }
@@ -420,6 +430,7 @@ mod tests {
                 make_set("aws", "AWS", &["aws-region", "aws-account"]),
             ],
             tracked_alias_ids: vec!["k8s-cluster".to_string()],
+            ..Default::default()
         };
         assert!(cfg.validate().is_ok());
     }
@@ -429,6 +440,7 @@ mod tests {
         let cfg = ServiceIdentityConfig {
             sets: vec![],
             tracked_alias_ids: vec!["k8s-cluster".to_string()],
+            ..Default::default()
         };
         let err = cfg.validate().unwrap_err();
         assert!(err.contains("at least 1"));
@@ -446,6 +458,7 @@ mod tests {
                 make_set("custom2", "Custom2", &["dc"]), // 6 exceeds MAX_SETS = 5
             ],
             tracked_alias_ids: vec!["k8s-cluster".to_string()],
+            ..Default::default()
         };
         let err = cfg.validate().unwrap_err();
         assert!(err.contains("max 5"));
@@ -459,6 +472,7 @@ mod tests {
                 make_set("k8s", "K8s Dupe", &["k8s-namespace"]),
             ],
             tracked_alias_ids: vec!["k8s-cluster".to_string()],
+            ..Default::default()
         };
         let err = cfg.validate().unwrap_err();
         assert!(err.contains("duplicate set id"));
