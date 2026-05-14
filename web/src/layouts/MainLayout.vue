@@ -149,6 +149,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             @close="closeChat"
             :aiChatInputContext="aiChatInputContext"
             :appendMode="aiChatAppendMode"
+            :aiChatPayload="aiChatPayload"
           />
         </q-card-section>
       </q-card>
