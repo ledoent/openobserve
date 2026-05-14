@@ -8,7 +8,7 @@ Licensed under AGPL v3. -->
     @right="onSwipeRight"
   >
     <template #right>
-      <span class="q-mr-xs">Delete</span>
+      <span class="q-mr-xs">{{ t("common.delete") }}</span>
       <q-icon name="delete" />
     </template>
   <div
@@ -48,19 +48,19 @@ Licensed under AGPL v3. -->
               <q-item-section avatar
                 ><q-icon name="open_in_new"
               /></q-item-section>
-              <q-item-section>Open</q-item-section>
+              <q-item-section>{{ t("common.open") }}</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="$emit('clone', row)">
               <q-item-section avatar
                 ><q-icon name="content_copy"
               /></q-item-section>
-              <q-item-section>Duplicate</q-item-section>
+              <q-item-section>{{ t("common.duplicate") }}</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="$emit('move', row)">
               <q-item-section avatar
                 ><q-icon name="drive_file_move"
               /></q-item-section>
-              <q-item-section>Move</q-item-section>
+              <q-item-section>{{ t("common.move") }}</q-item-section>
             </q-item>
             <q-separator />
             <q-item
@@ -70,7 +70,7 @@ Licensed under AGPL v3. -->
               @click="$emit('delete', row)"
             >
               <q-item-section avatar><q-icon name="delete" /></q-item-section>
-              <q-item-section>Delete</q-item-section>
+              <q-item-section>{{ t("common.delete") }}</q-item-section>
             </q-item>
           </q-list>
         </q-menu>
@@ -95,6 +95,7 @@ Licensed under AGPL v3. -->
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
+import { useI18n } from "vue-i18n";
 import { useHaptics } from "@/composables/useHaptics";
 
 export default defineComponent({
@@ -107,8 +108,9 @@ export default defineComponent({
   },
   emits: ["click", "open", "clone", "move", "delete"],
   setup() {
+    const { t } = useI18n();
     const { vibrate } = useHaptics();
-    return { vibrate };
+    return { t, vibrate };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {

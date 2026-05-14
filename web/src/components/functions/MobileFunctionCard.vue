@@ -8,7 +8,7 @@ Licensed under AGPL v3. -->
     @right="onSwipeRight"
   >
     <template #right>
-      <span class="q-mr-xs">Delete</span>
+      <span class="q-mr-xs">{{ t("common.delete") }}</span>
       <q-icon name="delete" />
     </template>
     <div
@@ -51,7 +51,7 @@ Licensed under AGPL v3. -->
             <q-list dense style="min-width: 200px">
               <q-item clickable v-close-popup @click="$emit('edit', row)">
                 <q-item-section avatar><q-icon name="edit" /></q-item-section>
-                <q-item-section>Edit</q-item-section>
+                <q-item-section>{{ t("common.edit") }}</q-item-section>
               </q-item>
               <q-item
                 clickable
@@ -61,7 +61,7 @@ Licensed under AGPL v3. -->
                 <q-item-section avatar
                   ><q-icon name="account_tree"
                 /></q-item-section>
-                <q-item-section>Associated Pipelines</q-item-section>
+                <q-item-section>{{ t("function.associatedPipelines") }}</q-item-section>
               </q-item>
               <q-separator />
               <q-item
@@ -71,7 +71,7 @@ Licensed under AGPL v3. -->
                 @click="$emit('delete', row)"
               >
                 <q-item-section avatar><q-icon name="delete" /></q-item-section>
-                <q-item-section>Delete</q-item-section>
+                <q-item-section>{{ t("common.delete") }}</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
@@ -84,6 +84,7 @@ Licensed under AGPL v3. -->
 
 <script lang="ts">
 import { computed, defineComponent, type PropType } from "vue";
+import { useI18n } from "vue-i18n";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
 import { useHaptics } from "@/composables/useHaptics";
 
@@ -97,6 +98,7 @@ export default defineComponent({
   },
   emits: ["click", "edit", "delete", "pipelines"],
   setup(props) {
+    const { t } = useI18n();
     const { vibrate } = useHaptics();
     const normalizedType = computed(() => {
       const raw = props.row.transType;
@@ -110,7 +112,7 @@ export default defineComponent({
       if (!single) return "";
       return single.length > 80 ? `${single.slice(0, 80)}…` : single;
     });
-    return { moreIcon: outlinedMoreVert, normalizedType, preview, vibrate };
+    return { t, moreIcon: outlinedMoreVert, normalizedType, preview, vibrate };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {

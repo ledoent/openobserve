@@ -11,10 +11,10 @@ Licensed under AGPL v3. -->
   >
     <template #left>
       <q-icon :name="row.enabled ? 'pause' : 'play_arrow'" />
-      <span class="q-ml-xs">{{ row.enabled ? "Pause" : "Start" }}</span>
+      <span class="q-ml-xs">{{ row.enabled ? t("alerts.pause") : t("alerts.start") }}</span>
     </template>
     <template #right>
-      <span class="q-mr-xs">Delete</span>
+      <span class="q-mr-xs">{{ t("common.delete") }}</span>
       <q-icon name="delete" />
     </template>
   <div
@@ -70,12 +70,12 @@ Licensed under AGPL v3. -->
                 <q-icon :name="row.enabled ? 'pause' : 'play_arrow'" />
               </q-item-section>
               <q-item-section>{{
-                row.enabled ? "Pause" : "Start"
+                row.enabled ? t("alerts.pause") : t("alerts.start")
               }}</q-item-section>
             </q-item>
             <q-item clickable v-close-popup @click="$emit('edit', row)">
               <q-item-section avatar><q-icon name="edit" /></q-item-section>
-              <q-item-section>Edit</q-item-section>
+              <q-item-section>{{ t("common.edit") }}</q-item-section>
             </q-item>
             <q-separator />
             <q-item
@@ -85,7 +85,7 @@ Licensed under AGPL v3. -->
               @click="$emit('delete', row)"
             >
               <q-item-section avatar><q-icon name="delete" /></q-item-section>
-              <q-item-section>Delete</q-item-section>
+              <q-item-section>{{ t("common.delete") }}</q-item-section>
             </q-item>
           </q-list>
         </q-menu>
@@ -110,7 +110,7 @@ Licensed under AGPL v3. -->
         class="mobile-report-card__state"
         :class="row.enabled ? 'is-on' : 'is-off'"
       >
-        {{ row.enabled ? "Enabled" : "Paused" }}
+        {{ row.enabled ? t("alerts.enabled") : t("alerts.paused") }}
       </span>
     </div>
   </div>
@@ -119,6 +119,7 @@ Licensed under AGPL v3. -->
 
 <script lang="ts">
 import { defineComponent, computed, type PropType } from "vue";
+import { useI18n } from "vue-i18n";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
 import { useHaptics } from "@/composables/useHaptics";
 
@@ -132,6 +133,7 @@ export default defineComponent({
   },
   emits: ["click", "toggle", "edit", "delete"],
   setup(props) {
+    const { t } = useI18n();
     const moreIcon = outlinedMoreVert;
     const { vibrate } = useHaptics();
     const reportType = computed(
@@ -142,7 +144,7 @@ export default defineComponent({
       if (!v || v === "-") return "";
       return String(v);
     });
-    return { moreIcon, reportType, lastTriggered, vibrate };
+    return { t, moreIcon, reportType, lastTriggered, vibrate };
   },
   methods: {
     onSwipeLeft({ reset }: { reset: () => void }) {

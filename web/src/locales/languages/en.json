@@ -5,6 +5,11 @@
     "ok": "OK",
     "apply": "Apply",
     "more": "More",
+    "open": "Open",
+    "duplicate": "Duplicate",
+    "export": "Export",
+    "explore": "Explore",
+    "schema": "Schema",
     "goBack": "Go Back",
     "stopGenerating": "Stop generating",
     "set": "+ Set",
@@ -802,6 +807,7 @@
   },
   "user": {
     "header": "Organization Member",
+    "invited": "Invited",
     "id": "User ID",
     "name": "User name",
     "role": "Role",
@@ -1055,6 +1061,7 @@
   "pipeline": {
     "header": "Pipelines",
     "create": "Create Pipeline",
+    "createBackfill": "Create Backfill",
     "SelectParentNode": "Select Parent Node",
     "SelectChildNode": "Select Child Node",
     "deleteNode": "Delete",
@@ -1219,6 +1226,7 @@
   "function": {
     "header": "Functions",
     "add": "New function",
+    "associatedPipelines": "Associated Pipelines",
     "search": "Search Function",
     "name": "Name",
     "function": "Function Detail",

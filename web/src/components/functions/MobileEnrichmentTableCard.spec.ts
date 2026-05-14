@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { Quasar } from "quasar";
+import i18n from "@/locales";
 import MobileEnrichmentTableCard from "./MobileEnrichmentTableCard.vue";
 
 const mountCard = (row: Record<string, any>) =>
   mount(MobileEnrichmentTableCard, {
     props: { row },
-    global: { plugins: [Quasar] },
+    global: { plugins: [Quasar, i18n] },
   });
 
 describe("MobileEnrichmentTableCard", () => {

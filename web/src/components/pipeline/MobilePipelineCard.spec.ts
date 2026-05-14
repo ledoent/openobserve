@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { Quasar } from "quasar";
+import i18n from "@/locales";
 import MobilePipelineCard from "./MobilePipelineCard.vue";
 
 const mountCard = (
@@ -9,7 +10,7 @@ const mountCard = (
 ) =>
   mount(MobilePipelineCard, {
     props: { row, isEnterprise },
-    global: { plugins: [Quasar] },
+    global: { plugins: [Quasar, i18n] },
   });
 
 describe("MobilePipelineCard", () => {

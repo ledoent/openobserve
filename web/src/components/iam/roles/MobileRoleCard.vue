@@ -8,7 +8,7 @@ Licensed under AGPL v3. -->
     @right="onSwipeRight"
   >
     <template #right>
-      <span class="q-mr-xs">Delete</span>
+      <span class="q-mr-xs">{{ t("common.delete") }}</span>
       <q-icon name="delete" />
     </template>
     <div
@@ -44,7 +44,7 @@ Licensed under AGPL v3. -->
             <q-list dense style="min-width: 180px">
               <q-item clickable v-close-popup @click="$emit('edit', row)">
                 <q-item-section avatar><q-icon name="edit" /></q-item-section>
-                <q-item-section>Edit</q-item-section>
+                <q-item-section>{{ t("common.edit") }}</q-item-section>
               </q-item>
               <q-separator />
               <q-item
@@ -54,7 +54,7 @@ Licensed under AGPL v3. -->
                 @click="$emit('delete', row)"
               >
                 <q-item-section avatar><q-icon name="delete" /></q-item-section>
-                <q-item-section>Delete</q-item-section>
+                <q-item-section>{{ t("common.delete") }}</q-item-section>
               </q-item>
             </q-list>
           </q-menu>
@@ -66,6 +66,7 @@ Licensed under AGPL v3. -->
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
+import { useI18n } from "vue-i18n";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
 import { useHaptics } from "@/composables/useHaptics";
 
@@ -79,8 +80,9 @@ export default defineComponent({
   },
   emits: ["click", "edit", "delete"],
   setup() {
+    const { t } = useI18n();
     const { vibrate } = useHaptics();
-    return { moreIcon: outlinedMoreVert, vibrate };
+    return { t, moreIcon: outlinedMoreVert, vibrate };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {

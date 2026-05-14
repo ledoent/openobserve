@@ -8,7 +8,7 @@ Licensed under AGPL v3. -->
     @right="onSwipeRight"
   >
     <template #right>
-      <span class="q-mr-xs">Delete</span>
+      <span class="q-mr-xs">{{ t("common.delete") }}</span>
       <q-icon name="delete" />
     </template>
     <div
@@ -61,7 +61,7 @@ Licensed under AGPL v3. -->
                 @click="$emit('edit', row)"
               >
                 <q-item-section avatar><q-icon name="edit" /></q-item-section>
-                <q-item-section>Edit</q-item-section>
+                <q-item-section>{{ t("common.edit") }}</q-item-section>
               </q-item>
               <q-item
                 v-if="row.status === 'pending' && row.token"
@@ -70,7 +70,7 @@ Licensed under AGPL v3. -->
                 @click="$emit('revoke', row)"
               >
                 <q-item-section avatar><q-icon name="cancel" /></q-item-section>
-                <q-item-section>Revoke Invite</q-item-section>
+                <q-item-section>{{ t("user.revoke_invite") }}</q-item-section>
               </q-item>
               <template
                 v-if="row.enableDelete && row.status !== 'pending'"
@@ -83,7 +83,7 @@ Licensed under AGPL v3. -->
                   @click="$emit('delete', row)"
                 >
                   <q-item-section avatar><q-icon name="delete" /></q-item-section>
-                  <q-item-section>Delete</q-item-section>
+                  <q-item-section>{{ t("common.delete") }}</q-item-section>
                 </q-item>
               </template>
             </q-list>
@@ -99,7 +99,7 @@ Licensed under AGPL v3. -->
           v-if="row.status === 'pending'"
           class="mobile-user-card__status is-pending"
         >
-          Invited
+          {{ t("user.invited") }}
         </span>
       </div>
     </div>
@@ -108,6 +108,7 @@ Licensed under AGPL v3. -->
 
 <script lang="ts">
 import { defineComponent, computed, type PropType } from "vue";
+import { useI18n } from "vue-i18n";
 import { outlinedMoreVert } from "@quasar/extras/material-icons-outlined";
 import { useHaptics } from "@/composables/useHaptics";
 
@@ -132,6 +133,7 @@ export default defineComponent({
   },
   emits: ["click", "edit", "delete", "revoke"],
   setup(props) {
+    const { t } = useI18n();
     const moreIcon = outlinedMoreVert;
     const { vibrate } = useHaptics();
     const fullName = computed(() => {
@@ -164,7 +166,7 @@ export default defineComponent({
       const canRevoke = r.status === "pending" && r.token;
       return canEdit || canDelete || canRevoke;
     });
-    return { moreIcon, fullName, initials, avatarColor, showMenu, vibrate };
+    return { t, moreIcon, fullName, initials, avatarColor, showMenu, vibrate };
   },
   methods: {
     onSwipeRight({ reset }: { reset: () => void }) {
