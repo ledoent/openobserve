@@ -6,6 +6,7 @@ import { mount } from "@vue/test-utils";
 import { Quasar } from "quasar";
 import { createStore } from "vuex";
 import { createRouter, createMemoryHistory } from "vue-router";
+import i18n from "@/locales";
 
 const vibrateSpy = vi.fn();
 vi.mock("@/composables/useHaptics", () => ({
@@ -73,7 +74,7 @@ describe("MobileBottomNav haptics", () => {
     await router.push("/logs");
     const wrapper = mount(MobileBottomNav, {
       props: { links },
-      global: { plugins: [Quasar, store, router] },
+      global: { plugins: [Quasar, store, router, i18n] },
     });
 
     const homeTab = wrapper.find('[aria-label="Home"]');
@@ -88,7 +89,7 @@ describe("MobileBottomNav haptics", () => {
     await router.push("/logs");
     const wrapper = mount(MobileBottomNav, {
       props: { links },
-      global: { plugins: [Quasar, store, router] },
+      global: { plugins: [Quasar, store, router, i18n] },
     });
 
     const logsTab = wrapper.find('[aria-label="Logs"]');
@@ -102,7 +103,7 @@ describe("MobileBottomNav haptics", () => {
     const store = makeStore();
     const wrapper = mount(MobileBottomNav, {
       props: { links },
-      global: { plugins: [Quasar, store, router] },
+      global: { plugins: [Quasar, store, router, i18n] },
     });
 
     const moreBtn = wrapper.find('[aria-label="More navigation options"]');

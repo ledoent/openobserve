@@ -359,7 +359,7 @@ size="16px" class="q-mr-xs" />
           <q-card style="max-height: 80vh; border-radius: 12px 12px 0 0">
             <q-card-section class="row items-center q-pb-none">
               <div class="text-subtitle1 text-weight-medium">
-                Select Organization
+                {{ t("organization.selectOrganization") }}
               </div>
               <q-space />
               <q-btn

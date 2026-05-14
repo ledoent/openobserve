@@ -49,7 +49,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       :aria-expanded="String(showMoreSheet)"
     >
       <q-icon name="more_horiz" size="22px" />
-      <span class="mobile-bottom-nav__label">More</span>
+      <span class="mobile-bottom-nav__label">{{ t("common.more") }}</span>
     </button>
 
     <!-- More sheet -->
@@ -74,6 +74,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { defineComponent, computed, ref, type PropType } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import MenuLink from "./MenuLink.vue";
 import { useHaptics } from "@/composables/useHaptics";
 
@@ -101,6 +102,7 @@ export default defineComponent({
   setup(props) {
     const store = useStore();
     const router = useRouter();
+    const { t } = useI18n();
     const { vibrate } = useHaptics();
     const showMoreSheet = ref(false);
 
@@ -142,6 +144,7 @@ export default defineComponent({
     };
 
     return {
+      t,
       primaryItems,
       overflowItems,
       showMoreSheet,
