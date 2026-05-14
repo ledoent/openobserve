@@ -14,6 +14,12 @@
 #   3. `fork mobile-ui-upstream` — PR #3 feature branch (mobile UX).
 #   4. `fork fix/sql-aggregate-columns` — PR #4 SQL aggregate column fix
 #      (temporary, remove once PR is merged upstream).
+#   5. `fork upstream/fix-audit-ignore-yanked-deps` — upstream PR #11832
+#      (lettre CVE bump + rustls-pemfile migration + core2 ignore;
+#      temporary, remove once merged upstream).
+#   6. `fork upstream/fix-orphan-generate-unit-tests-workflow` — upstream
+#      PR #11833 (CI noise removal; temporary, remove once merged
+#      upstream).
 #
 # The push to `build/deploy` triggers `ledoent-build.yml`, which produces
 # `v0.70.0-mobile-<shortsha>` in GAR. Milestone tags (e.g. `-r2`) are cut
@@ -28,4 +34,6 @@
     - fork ledoent
     - fork mobile-ui-upstream
     - fork fix/sql-aggregate-columns
+    - fork upstream/fix-audit-ignore-yanked-deps
+    - fork upstream/fix-orphan-generate-unit-tests-workflow
   target: fork build/deploy
