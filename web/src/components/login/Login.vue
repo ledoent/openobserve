@@ -16,7 +16,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 <template>
   <div class="card-container tw:w-[100vw] tw:h-[100vh]">
-    <div style="max-width: min(400px, 90vw); padding-top: clamp(2rem, 8vh, 100px)" class="q-mx-auto q-pa-md">
+    <div
+      :style="{
+        maxWidth: isMobile ? 'min(400px, 90vw)' : '400px',
+        paddingTop: isMobile ? 'clamp(2rem, 8vh, 100px)' : '100px',
+      }"
+      class="q-mx-auto q-pa-md"
+    >
       <div
         class="flex justify-center text-center"
         v-if="
@@ -201,6 +207,7 @@ import {
 } from "@/utils/zincutils";
 import { redirectUser } from "@/utils/common";
 import { computed } from "vue";
+import { useScreen } from "@/composables/useScreen";
 import config from "@/aws-exports";
 import { openobserveRum } from "@openobserve/browser-rum";
 import { useReo } from "@/services/reodotdev_analytics";
@@ -213,6 +220,7 @@ export default defineComponent({
     const router = useRouter();
     const $q = useQuasar();
     const { t } = useI18n();
+    const { isMobile } = useScreen();
     const name = ref("");
     const password = ref("");
     const confirmpassword = ref("");
@@ -465,6 +473,7 @@ export default defineComponent({
       loginWithSSo,
       config,
       autoRedirectDexLogin,
+      isMobile,
     };
   },
   methods: {
