@@ -58,11 +58,15 @@ export default defineComponent({
         props.row._timestamp || props.row["@timestamp"] || props.row.timestamp;
       if (!ts) return "";
       try {
-        // Handle nanosecond, microsecond, and millisecond timestamps
+        // Timestamps can arrive as nanoseconds (post-2001 ns is > 10^18),
+        // microseconds (post-2001 µs is > 10^15), or milliseconds. Normalize
+        // to ms for Date().
+        const NS_THRESHOLD = 1e18;
+        const US_THRESHOLD = 1e15;
         let msTs = ts;
         if (typeof ts === "number") {
-          if (ts > 1e18) msTs = ts / 1e6;
-          else if (ts > 1e15) msTs = ts / 1000;
+          if (ts > NS_THRESHOLD) msTs = ts / 1e6;
+          else if (ts > US_THRESHOLD) msTs = ts / 1000;
         }
         const date = new Date(msTs);
         const now = Date.now();
