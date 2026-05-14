@@ -56,6 +56,10 @@ export default defineComponent({
 
     const onRefresh = () =>
       new Promise((resolve) => {
+        // Defensive: usePullToRefresh already guards against re-entry while
+        // isRefreshing is true, but if a caller invokes onRefresh directly
+        // we don't want to abandon a prior, unresolved promise.
+        settle();
         resolveRefresh = resolve;
         emit("refresh", settle);
         // Fallback: auto-resolve after 8s so the spinner never sticks forever

@@ -51,6 +51,11 @@ export function usePullToRefresh(
     pulling = true;
   };
 
+  // Don't commit to a pull (preventDefault + visible distance) until the
+  // finger has moved past a small intent threshold. iOS Safari otherwise
+  // loses the first ~8px of any native scroll-out-of-bounce gesture.
+  const INTENT_DELTA_PX = 8;
+
   const onTouchMove = (e: TouchEvent) => {
     if (!pulling || isRefreshing.value) return;
     const delta = e.touches[0].clientY - startY;
@@ -58,6 +63,7 @@ export function usePullToRefresh(
       resetPull();
       return;
     }
+    if (delta < INTENT_DELTA_PX) return;
     isPulling.value = true;
     pullDistance.value = Math.min(delta * 0.5, threshold * 1.5);
     if (!thresholdCrossed && pullDistance.value >= threshold) {
@@ -122,13 +128,19 @@ export function usePullToRefresh(
 
   // Re-bind if the container element is remounted (v-if in a parent destroys
   // and recreates the node; without this watcher listeners stay on the stale
-  // node).
-  watch(containerRef, (el) => {
-    if (el === attached) return;
-    if (attached) detach(attached);
-    if (el) attach(el);
-    attached = el;
-  });
+  // node). flush:'post' ensures the new DOM node is committed before we
+  // attach — otherwise an immediate touch on the freshly-mounted container
+  // could land on the stale listener set.
+  watch(
+    containerRef,
+    (el) => {
+      if (el === attached) return;
+      if (attached) detach(attached);
+      if (el) attach(el);
+      attached = el;
+    },
+    { flush: "post" },
+  );
 
   onBeforeUnmount(() => {
     unmounted = true;
