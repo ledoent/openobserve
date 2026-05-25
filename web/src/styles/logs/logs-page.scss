@@ -1205,6 +1205,42 @@
 }
 
 /* ============================================================================
+   LOGS TABLE DESIGN SYSTEM
+   ============================================================================ */
+
+.logs-table {
+  // Header: uppercase tracking + accent separator
+  thead {
+    th.table-head {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--o2-text-secondary);
+      border-bottom: 2px solid var(--o2-theme-color) !important;
+      white-space: nowrap;
+      user-select: none;
+    }
+  }
+
+  // Data rows: monospace values + alternating depth
+  tbody {
+    tr {
+      transition: background 0.1s ease;
+
+      &:nth-child(even) {
+        background: color-mix(in srgb, var(--o2-theme-color) 3%, transparent);
+      }
+    }
+
+    td {
+      font-size: 0.8125rem; // 13px — one step tighter than body
+      font-variant-numeric: tabular-nums; // aligned number columns
+    }
+  }
+}
+
+/* ============================================================================
    LOADING & SPINNER STYLES
    ============================================================================ */
 

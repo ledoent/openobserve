@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       :style="{
         minWidth: '100%',
         ...columnSizeVars,
-        minHeight: totalSize + 'px',
+        minHeight: (totalSize + 44) + 'px',
         width: !defaultColumns
           ? table.getCenterTotalSize() + 'px'
           : wrap
@@ -62,7 +62,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   ? tableRowSize + 'px'
                   : table.getTotalSize() + 'px',
             minWidth: '100%',
-            background: store.state.theme === 'dark' ? '#565656' : '#E0E0E0',
+            background: 'var(--o2-bg-gray)',
           }"
           tag="tr"
           @start="(event) => handleDragStart(event)"
@@ -146,7 +146,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             :colspan="columnOrder.length"
             class="text-bold"
             :style="{
-              background: store.state.theme === 'dark' ? '#565656' : '#E0E0E0',
+              background: 'var(--o2-bg-gray)',
               opacity: 0.7,
             }"
           >
