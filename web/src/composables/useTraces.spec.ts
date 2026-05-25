@@ -34,21 +34,25 @@ vi.mock("vue-router", () => ({
   })),
 }));
 
-vi.mock("vuex", () => ({
-  useStore: vi.fn(() => ({
-    state: {
-      selectedOrganization: { identifier: "test-org" },
-      zoConfig: { timestamp_column: "_timestamp" },
-      organizationData: {
-        organizationSettings: {
-          span_id_field_name: "span_id",
-          trace_id_field_name: "trace_id",
+vi.mock("vuex", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    useStore: vi.fn(() => ({
+      state: {
+        selectedOrganization: { identifier: "test-org" },
+        zoConfig: { timestamp_column: "_timestamp", sql_reserved_keywords: [] },
+        organizationData: {
+          organizationSettings: {
+            span_id_field_name: "span_id",
+            trace_id_field_name: "trace_id",
+          },
         },
       },
-    },
-    dispatch: vi.fn(),
-  })),
-}));
+      dispatch: vi.fn(),
+    })),
+  };
+});
 
 const { mockCopyToClipboard, mockNotify } = vi.hoisted(() => ({
   mockCopyToClipboard: vi.fn().mockResolvedValue(undefined),
@@ -77,11 +81,15 @@ const { localTraceFilterStore, mockUseLocalTraceFilterField } = vi.hoisted(
   },
 );
 
-vi.mock("@/utils/zincutils", () => ({
-  b64EncodeStandard: vi.fn((s: string) => `b64std:${s}`),
-  b64EncodeUnicode: vi.fn((s: string) => `b64uni:${s}`),
-  useLocalTraceFilterField: mockUseLocalTraceFilterField,
-}));
+vi.mock("@/utils/zincutils", async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    b64EncodeStandard: vi.fn((s: string) => `b64std:${s}`),
+    b64EncodeUnicode: vi.fn((s: string) => `b64uni:${s}`),
+    useLocalTraceFilterField: mockUseLocalTraceFilterField,
+  };
+});
 
 vi.mock("@/utils/traces/traceColors", () => ({
   getSpanColorHex: vi.fn((index: number) => `#color-${index}`),
@@ -756,18 +764,18 @@ describe("useTraces", () => {
           service_name: [],
           spans: [1, 0],
           first_event: {},
-          llm_usage_tokens_input: 100,
-          llm_usage_tokens_output: 200,
-          llm_usage_tokens_total: 300,
-          llm_usage_cost_total: 0.05,
+          gen_ai_usage_input_tokens: 100,
+          gen_ai_usage_output_tokens: 200,
+          gen_ai_usage_total_tokens: 300,
+          gen_ai_usage_cost: 0.05,
         },
       ];
 
       const [item] = formatTracesMetaData(traces);
-      expect(item.llm_usage_details_input).toBe(100);
-      expect(item.llm_usage_details_output).toBe(200);
-      expect(item.llm_usage_details_total).toBe(300);
-      expect(item.llm_cost_details_total).toBe(0.05);
+      expect(item.gen_ai_usage_input_tokens).toBe(100);
+      expect(item.gen_ai_usage_output_tokens).toBe(200);
+      expect(item.gen_ai_usage_total_tokens).toBe(300);
+      expect(item.gen_ai_usage_cost).toBe(0.05);
     });
   });
 

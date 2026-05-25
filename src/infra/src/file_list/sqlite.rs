@@ -404,16 +404,19 @@ SELECT id, account, stream, date, file, min_ts, max_ts, records, original_size, 
         let stream_key = format!("{org_id}/{stream_type}/{stream_name}");
 
         let pool = CLIENT_RO.clone();
+        let cfg = get_config();
+        let max_size = cfg.compact.max_file_size as i64 * 95 / 100;
         let ret = sqlx::query_as::<_, super::FileRecord>(
                 r#"
 SELECT id, account, stream, date, file, min_ts, max_ts, records, original_size, compressed_size, index_size, flattened
     FROM file_list
-    WHERE stream = $1 AND date >= $2 AND date <= $3;
+    WHERE stream = $1 AND date >= $2 AND date <= $3 AND original_size <= $4;
                 "#,
             )
             .bind(stream_key)
             .bind(date_start)
             .bind(date_end)
+            .bind(max_size)
             .fetch_all(&pool)
             .await;
         Ok(ret?.iter().map(|r| r.into()).collect())
@@ -610,7 +613,7 @@ SELECT id, account, stream, date, file, min_ts, max_ts, records, original_size, 
         let sql = r#"
 SELECT date
     FROM file_list
-    WHERE stream = $1 AND max_ts >= $2 AND max_ts <= $3 AND min_ts <= $4 AND records < $5
+    WHERE stream = $1 AND max_ts >= $2 AND max_ts <= $3 AND min_ts <= $4 AND original_size <= $5
     GROUP BY date HAVING count(*) >= $6;
             "#;
 
@@ -619,7 +622,7 @@ SELECT date
             .bind(time_start)
             .bind(max_ts_upper_bound)
             .bind(time_end)
-            .bind(cfg.compact.old_data_min_records)
+            .bind(cfg.compact.max_file_size as i64 / 2)
             .bind(cfg.compact.old_data_min_files)
             .fetch_all(&pool)
             .await?;
@@ -797,19 +800,23 @@ GROUP BY stream;
         stream_type: Option<StreamType>,
         stream_name: Option<&str>,
     ) -> Result<Vec<(String, StreamStats)>> {
-        let sql = if let Some(stream_type) = stream_type
+        // SECURITY: bind parameters to prevent SQL injection when any of the
+        // inputs contain quotes or SQL metacharacters (GHSA-5x2v-jg9q-g8qc).
+        let pool = CLIENT_RO.clone();
+        let ret = if let Some(stream_type) = stream_type
             && let Some(stream_name) = stream_name
         {
-            format!(
-                "SELECT * FROM stream_stats WHERE stream = '{org_id}/{stream_type}/{stream_name}';",
-            )
+            let stream_key = format!("{org_id}/{stream_type}/{stream_name}");
+            sqlx::query_as::<_, super::StatsRecord>("SELECT * FROM stream_stats WHERE stream = ?;")
+                .bind(&stream_key)
+                .fetch_all(&pool)
+                .await?
         } else {
-            format!("SELECT * FROM stream_stats WHERE org = '{org_id}';")
+            sqlx::query_as::<_, super::StatsRecord>("SELECT * FROM stream_stats WHERE org = ?;")
+                .bind(org_id)
+                .fetch_all(&pool)
+                .await?
         };
-        let pool = CLIENT_RO.clone();
-        let ret = sqlx::query_as::<_, super::StatsRecord>(&sql)
-            .fetch_all(&pool)
-            .await?;
         let mut stats: HashMap<String, StreamStats> = HashMap::with_capacity(ret.len() / 2);
         for r in ret {
             match stats.get_mut(&r.stream) {
@@ -1418,6 +1425,21 @@ GROUP BY stream;
             .await?;
         Ok(ret.map(|r| r.into()).unwrap_or_default())
     }
+
+    async fn org_stats_by_account(&self, org_id: &str, account: &str) -> Result<(i64, i64)> {
+        let sql = r#"SELECT 
+SUM(original_size) AS original_size,
+SUM(index_size) AS index_size
+FROM file_list
+WHERE org = $1 AND account = $2;"#;
+        let pool = CLIENT_RO.clone();
+        let ret: Option<(i64, i64)> = sqlx::query_as(sql)
+            .bind(org_id)
+            .bind(account)
+            .fetch_optional(&pool)
+            .await?;
+        Ok(ret.unwrap_or_default())
+    }
 }
 
 impl SqliteFileList {
@@ -1775,21 +1797,21 @@ CREATE TABLE IF NOT EXISTS file_list_dump_stats
         &client,
         "file_list",
         "account",
-        "VARCHAR(32) default '' not null",
+        "VARCHAR(128) default '' not null",
     )
     .await?;
     add_column(
         &client,
         "file_list_history",
         "account",
-        "VARCHAR(32) default '' not null",
+        "VARCHAR(128) default '' not null",
     )
     .await?;
     add_column(
         &client,
         "file_list_deleted",
         "account",
-        "VARCHAR(32) default '' not null",
+        "VARCHAR(128) default '' not null",
     )
     .await?;
 

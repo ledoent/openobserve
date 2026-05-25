@@ -22,20 +22,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     maximized
     data-test="edit-backfill-job-dialog"
   >
-    <q-card class="tw-w-full" style="width: 600px">
+    <q-card class="tw-w-full" style="width: 600px; max-width: 95vw">
       <q-card-section class="q-pa-md">
         <div class="flex items-center justify-between">
           <div class="text-h6" data-test="dialog-title">
             Edit Backfill Job
           </div>
-          <q-btn
-            icon="close"
-            flat
-            round
-            dense
+          <OButton
+            variant="ghost"
+            size="icon"
             v-close-popup
             data-test="close-dialog-btn"
-          />
+          >
+            <template #icon-left><X class="tw:size-4 tw:shrink-0" /></template>
+          </OButton>
         </div>
       </q-card-section>
 
@@ -153,22 +153,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </div>
 
           <!-- Form Actions -->
-          <div class="flex justify-end tw-gap-2 q-mt-md">
-            <q-btn
-              flat
-              label="Cancel"
-              color="grey-8"
+          <div class="tw:flex tw:justify-end tw:gap-2 q-mt-md">
+            <OButton
+              variant="outline"
+              size="sm-action"
               @click="onCancel"
               data-test="cancel-btn"
-            />
-            <q-btn
+            >Cancel</OButton>
+            <OButton
               type="submit"
-              label="Update Job"
-              color="primary"
+              variant="primary"
+              size="sm-action"
               :loading="loading"
-              :disable="loading"
+              :disabled="loading"
               data-test="update-btn"
-            />
+            >Update Job</OButton>
           </div>
         </q-form>
       </q-card-section>
@@ -180,6 +179,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { ref, computed, watch, nextTick } from "vue";
 import { useQuasar } from "quasar";
 import { useStore } from "vuex";
+import OButton from "@/lib/core/Button/OButton.vue";
+import { X } from "lucide-vue-next";
 import backfillService, { type BackfillJob } from "../../services/backfill";
 import DateTime from "@/components/DateTime.vue";
 

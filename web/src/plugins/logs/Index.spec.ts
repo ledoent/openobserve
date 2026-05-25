@@ -753,6 +753,114 @@ describe("Logs Index", async () => {
     expect(wrapper.vm.visualizeErrorData.errors).toEqual(['some-error']);
   });
 
+  describe("onMobileLogsRefresh", () => {
+    it("calls ack and skips work when a query is already loading", async () => {
+      const ack = vi.fn();
+      const getQueryData = vi
+        .spyOn(wrapper.vm, "getQueryData")
+        .mockResolvedValue(undefined);
+      const handleRunQueryFn = vi
+        .spyOn(wrapper.vm, "handleRunQueryFn")
+        .mockResolvedValue(undefined);
+      wrapper.vm.searchObj.loading = true;
+
+      await wrapper.vm.onMobileLogsRefresh(ack);
+
+      expect(ack).toHaveBeenCalledOnce();
+      expect(getQueryData).not.toHaveBeenCalled();
+      expect(handleRunQueryFn).not.toHaveBeenCalled();
+    });
+
+    it("re-runs the query via getQueryData in logs mode with applied search", async () => {
+      const ack = vi.fn();
+      const getQueryData = vi
+        .spyOn(wrapper.vm, "getQueryData")
+        .mockResolvedValue(undefined);
+      const refreshHistogramChart = vi
+        .spyOn(wrapper.vm, "refreshHistogramChart")
+        .mockImplementation(() => {});
+      wrapper.vm.searchObj.loading = false;
+      wrapper.vm.searchObj.meta.logsVisualizeToggle = "logs";
+      wrapper.vm.searchObj.meta.searchApplied = true;
+      wrapper.vm.searchObj.data.stream.selectedStream = ["logs_a"];
+
+      await wrapper.vm.onMobileLogsRefresh(ack);
+
+      expect(getQueryData).toHaveBeenCalledWith(false);
+      expect(refreshHistogramChart).toHaveBeenCalled();
+      expect(ack).toHaveBeenCalledOnce();
+    });
+
+    it("re-runs via handleRunQueryFn in visualize mode", async () => {
+      const ack = vi.fn();
+      const getQueryData = vi
+        .spyOn(wrapper.vm, "getQueryData")
+        .mockResolvedValue(undefined);
+      const handleRunQueryFn = vi
+        .spyOn(wrapper.vm, "handleRunQueryFn")
+        .mockResolvedValue(undefined);
+      wrapper.vm.searchObj.loading = false;
+      wrapper.vm.searchObj.meta.logsVisualizeToggle = "visualize";
+      wrapper.vm.searchObj.data.stream.selectedStream = ["logs_a"];
+
+      await wrapper.vm.onMobileLogsRefresh(ack);
+
+      expect(handleRunQueryFn).toHaveBeenCalledWith(false);
+      expect(getQueryData).not.toHaveBeenCalled();
+      expect(ack).toHaveBeenCalledOnce();
+    });
+
+    it("calls ack with no query work when no stream is selected", async () => {
+      const ack = vi.fn();
+      const getQueryData = vi
+        .spyOn(wrapper.vm, "getQueryData")
+        .mockResolvedValue(undefined);
+      const handleRunQueryFn = vi
+        .spyOn(wrapper.vm, "handleRunQueryFn")
+        .mockResolvedValue(undefined);
+      wrapper.vm.searchObj.loading = false;
+      wrapper.vm.searchObj.meta.logsVisualizeToggle = "logs";
+      wrapper.vm.searchObj.meta.searchApplied = true;
+      wrapper.vm.searchObj.data.stream.selectedStream = [];
+
+      await wrapper.vm.onMobileLogsRefresh(ack);
+
+      expect(getQueryData).not.toHaveBeenCalled();
+      expect(handleRunQueryFn).not.toHaveBeenCalled();
+      expect(ack).toHaveBeenCalledOnce();
+    });
+
+    it("still calls ack when the underlying query throws", async () => {
+      const ack = vi.fn();
+      vi.spyOn(wrapper.vm, "getQueryData").mockRejectedValue(new Error("boom"));
+      vi.spyOn(wrapper.vm, "refreshHistogramChart").mockImplementation(() => {});
+      wrapper.vm.searchObj.loading = false;
+      wrapper.vm.searchObj.meta.logsVisualizeToggle = "logs";
+      wrapper.vm.searchObj.meta.searchApplied = true;
+      wrapper.vm.searchObj.data.stream.selectedStream = ["logs_a"];
+
+      await expect(wrapper.vm.onMobileLogsRefresh(ack)).rejects.toThrow("boom");
+      expect(ack).toHaveBeenCalledOnce();
+    });
+
+    it("does not touch refreshData or the polling interval", async () => {
+      const ack = vi.fn();
+      vi.spyOn(wrapper.vm, "getQueryData").mockResolvedValue(undefined);
+      vi.spyOn(wrapper.vm, "refreshHistogramChart").mockImplementation(() => {});
+      const refreshData = vi.spyOn(wrapper.vm, "refreshData" as any);
+      const before = wrapper.vm.searchObj.meta.refreshInterval;
+      wrapper.vm.searchObj.loading = false;
+      wrapper.vm.searchObj.meta.logsVisualizeToggle = "logs";
+      wrapper.vm.searchObj.meta.searchApplied = true;
+      wrapper.vm.searchObj.data.stream.selectedStream = ["logs_a"];
+
+      await wrapper.vm.onMobileLogsRefresh(ack);
+
+      expect(refreshData).not.toHaveBeenCalled();
+      expect(wrapper.vm.searchObj.meta.refreshInterval).toBe(before);
+    });
+  });
+
   it("Should watch runQuery and trigger runQueryFn when true", async () => {
     wrapper.vm.searchObj.runQuery = true;
     await flushPromises();
@@ -1179,15 +1287,29 @@ describe("Logs Index", async () => {
         expect(typeof wrapper.vm.onBuildQueryGenerated).toBe("function");
       });
 
-      it("should sync generated query on onBuildQueryGenerated", async () => {
+      it("should sync full SQL on onBuildQueryGenerated when SQL mode is ON", async () => {
         const testQuery = 'SELECT histogram(_timestamp) FROM "logs"';
+        wrapper.vm.searchObj.meta.sqlMode = true;
         wrapper.vm.onBuildQueryGenerated(testQuery);
         await flushPromises();
 
         expect(wrapper.vm.searchObj.data.query).toBe(testQuery);
       });
 
+      it("should sync only WHERE clause on onBuildQueryGenerated when SQL mode is OFF", async () => {
+        wrapper.vm.searchObj.meta.sqlMode = false;
+        const testQuery =
+          'SELECT histogram(_timestamp) FROM "logs" WHERE level = \'ERROR\'';
+        wrapper.vm.onBuildQueryGenerated(testQuery);
+        await flushPromises();
+
+        // Should contain only the WHERE clause part, not the full SQL
+        // extractWhereClause is mocked, so it returns "" for the mock parser
+        expect(wrapper.vm.searchObj.data.query).not.toBe(testQuery);
+      });
+
       it("should not update query if onBuildQueryGenerated receives empty string", async () => {
+        wrapper.vm.searchObj.meta.sqlMode = true;
         const originalQuery = wrapper.vm.searchObj.data.query;
         wrapper.vm.onBuildQueryGenerated("");
         await flushPromises();

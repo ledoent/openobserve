@@ -16,7 +16,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 <template>
   <div class="card-container tw:w-[100vw] tw:h-[100vh]">
-    <div style="max-width: 400px; padding-top: 100px" class="q-mx-auto q-pa-md">
+    <div
+      :style="{
+        maxWidth: isMobile ? 'min(400px, 90vw)' : '400px',
+        paddingTop: isMobile ? 'clamp(2rem, 8vh, 100px)' : '100px',
+      }"
+      class="q-mx-auto q-pa-md"
+    >
       <div
         class="flex justify-center text-center"
         v-if="
@@ -92,13 +98,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </div>
 
         <div v-if="showSSO" class="flex justify-center">
-          <q-btn
+          <OButton
             data-test="sso-login-btn"
-            class="text-bold no-border"
-            padding="sm lg"
-            color="primary"
-            no-caps
-            style="width: 400px"
+            variant="primary"
+            size="sm-action"
+            class="full-width"
             @click="loginWithSSo"
           >
             <div
@@ -111,7 +115,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               />
               <span class="text-center"> Login with SSO</span>
             </div>
-          </q-btn>
+          </OButton>
         </div>
 
         <div v-if="showSSO && showInternalLogin" class="q-py-md text-center">
@@ -138,6 +142,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               placeholder="Email"
               class="showLabelOnTop no-case"
               type="email"
+              inputmode="email"
+              autocomplete="email"
+              enterkeyhint="next"
               dense
               stack-label
               filled
@@ -152,24 +159,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               placeholder="Password"
               class="showLabelOnTop no-case"
               type="password"
+              autocomplete="current-password"
+              enterkeyhint="done"
               dense
               stack-label
               filled
             />
 
             <div class="q-mt-lg q-mb-xl">
-              <q-btn
+              <OButton
                 data-cy="login-sign-in"
-                unelevated
-                class="full-width text-bold no-border"
-                color="primary"
+                variant="primary"
+                size="sm-action"
+                block
                 type="submit"
-                padding="sm lg"
-                :label="t('login.login')"
                 :loading="submitting"
-                no-caps
                 @click="onSignIn()"
-              />
+              >
+                {{ t('login.login') }}
+              </OButton>
             </div>
           </q-form>
         </div>
@@ -197,18 +205,22 @@ import {
 } from "@/utils/zincutils";
 import { redirectUser } from "@/utils/common";
 import { computed } from "vue";
+import { useScreen } from "@/composables/useScreen";
 import config from "@/aws-exports";
+import OButton from '@/lib/core/Button/OButton.vue';
 import { openobserveRum } from "@openobserve/browser-rum";
 import { useReo } from "@/services/reodotdev_analytics";
 
 export default defineComponent({
   name: "PageLogin",
+  components: { OButton },
 
   setup() {
     const store = useStore();
     const router = useRouter();
     const $q = useQuasar();
     const { t } = useI18n();
+    const { isMobile } = useScreen();
     const name = ref("");
     const password = ref("");
     const confirmpassword = ref("");
@@ -461,6 +473,7 @@ export default defineComponent({
       loginWithSSo,
       config,
       autoRedirectDexLogin,
+      isMobile,
     };
   },
   methods: {

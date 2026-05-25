@@ -99,6 +99,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               dense
               flat
               stack-label
+              autocomplete="off"
+              enterkeyhint="next"
               :rules="[
                 (val: any) =>
                   !!val
@@ -118,6 +120,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               dense
               flat
               stack-label
+              type="url"
+              inputmode="url"
+              autocomplete="off"
+              enterkeyhint="next"
               :rules="[
                 (val: any) => !!val.trim() || 'Field is required!',
                 (val: any) =>
@@ -150,6 +156,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   dense
                   flat
                   stack-label
+                  autocomplete="organization"
+                  enterkeyhint="next"
                   :rules="[
                     (val: any) =>
                       !!val?.trim() ||
@@ -175,6 +183,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   dense
                   flat
                   stack-label
+                  autocomplete="off"
+                  enterkeyhint="next"
                   :rules="[
                     (val: any) =>
                       !!val?.trim() ||
@@ -204,6 +214,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               flat
               stack-label
               bottom-slots
+              autocomplete="off"
+              enterkeyhint="next"
               :disable="formData.destination_type !== 'custom'"
               :rules="[
                 ...(formData.destination_type === 'custom'
@@ -269,6 +281,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               dense
               flat
               stack-label
+              autocomplete="off"
+              enterkeyhint="next"
               :rules="[
                 (val: any) =>
                   !!val?.trim() || 'Index name is required for ESBulk format',
@@ -292,6 +306,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               dense
               flat
               stack-label
+              autocomplete="off"
+              enterkeyhint="next"
               :rules="[
                 (val: any) =>
                   (val !== null && val !== undefined && val !== '') ||
@@ -323,6 +339,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 dense
                 flat
                 stack-label
+                autocomplete="off"
+                enterkeyhint="next"
                 tabindex="0"
               >
                 <template v-slot:hint>
@@ -340,6 +358,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 dense
                 flat
                 stack-label
+                autocomplete="off"
+                enterkeyhint="next"
                 tabindex="0"
               >
                 <template v-slot:hint>
@@ -357,6 +377,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 dense
                 flat
                 stack-label
+                autocomplete="off"
+                enterkeyhint="next"
                 tabindex="0"
               >
                 <template v-slot:hint>
@@ -377,6 +399,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 dense
                 flat
                 stack-label
+                autocomplete="off"
+                enterkeyhint="next"
                 :rules="[
                   (val: any) =>
                     !!val?.trim() || 'DD Source is required for Datadog',
@@ -398,6 +422,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 dense
                 flat
                 stack-label
+                autocomplete="off"
+                enterkeyhint="next"
                 :rules="[
                   (val: any) =>
                     !!val?.trim() || 'DD Tags are required for Datadog',
@@ -419,6 +445,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 dense
                 flat
                 stack-label
+                autocomplete="off"
+                enterkeyhint="next"
                 tabindex="0"
               >
                 <template v-slot:hint> Service name for Datadog logs </template>
@@ -434,6 +462,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 dense
                 flat
                 stack-label
+                autocomplete="off"
+                enterkeyhint="next"
                 tabindex="0"
               >
                 <template v-slot:hint> Hostname for Datadog logs </template>
@@ -462,6 +492,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   filled
                   :placeholder="t('alert_destinations.api_header')"
                   dense
+                  autocomplete="off"
+                  enterkeyhint="next"
                   tabindex="0"
                 />
               </div>
@@ -476,34 +508,35 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   outlined
                   filled
                   dense
+                  autocomplete="off"
+                  enterkeyhint="next"
                   tabindex="0"
                 />
               </div>
               <div class="col-2 headers-btns">
-                <q-btn
+                <OButton
                   :data-test="`add-destination-header-${header['key']}-delete-btn`"
-                  icon="delete"
-                  class="q-ml-xs iconHoverBtn el-border el-border-radius"
-                  :class="store.state?.theme === 'dark' ? 'icon-dark' : ''"
-                  padding="sm"
-                  dense
-                  flat
+                  variant="ghost-destructive"
+                  size="icon-xs-sq"
                   :title="t('alert_templates.edit')"
                   @click="deleteApiHeader(header)"
-                />
-                <q-btn
+                >
+                  <template #icon-left>
+                    <Trash2 class="tw:size-3.5 tw:shrink-0" />
+                  </template>
+                </OButton>
+                <OButton
                   data-test="add-destination-add-header-btn"
                   v-if="index === apiHeaders.length - 1"
-                  icon="add"
-                  :class="store.state?.theme === 'dark' ? 'icon-dark' : ''"
-                  class="q-ml-xs iconHoverBtn el-border el-border-radius"
-                  padding="sm"
-                  size="sm"
-                  dense
-                  flat
+                  variant="ghost"
+                  size="icon-xs-sq"
                   :title="t('alert_templates.edit')"
                   @click="addApiHeader()"
-                />
+                >
+                  <template #icon-left>
+                    <Plus class="tw:size-3.5 tw:shrink-0" />
+                  </template>
+                </OButton>
               </div>
             </div>
           </div>
@@ -570,75 +603,50 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       <!-- Form buttons -->
       <div class="flex justify-start q-mb-md">
-        <div v-if="step === 1">
-          <q-btn
+        <div v-if="step === 1" class="tw:flex tw:gap-2">
+          <OButton
             data-test="step1-cancel-btn"
-            class="o2-secondary-button tw:h-[36px] q-mr-sm"
-            :label="t('alerts.cancel')"
-            flat
-            :class="
-              store.state.theme === 'dark'
-                ? 'o2-secondary-button-dark'
-                : 'o2-secondary-button-light'
-            "
-            no-caps
+            variant="outline"
+            size="sm-action"
             @click="$emit('cancel')"
-          />
-          <q-btn
+          >
+            {{ t('alerts.cancel') }}
+          </OButton>
+          <OButton
             data-test="step1-continue-btn"
+            variant="primary"
+            size="sm-action"
+            :disabled="!canProceedStep1"
             @click="nextStep"
-            :disable="!canProceedStep1"
-            label="Continue"
-            class="no-border o2-primary-button tw:h-[36px]"
-            :class="
-              store.state.theme === 'dark'
-                ? 'o2-primary-button-dark'
-                : 'o2-primary-button-light'
-            "
-            flat
-            no-caps
-          />
+          >
+            Continue
+          </OButton>
         </div>
-        <div v-if="step > 1">
-          <q-btn
+        <div v-if="step > 1" class="tw:flex tw:gap-2">
+          <OButton
             data-test="step3-back-btn"
+            variant="outline"
+            size="sm-action"
             @click="prevStep"
-            label="Back"
-            class="o2-secondary-button tw:h-[36px] q-mr-sm"
-            :class="
-              store.state.theme === 'dark'
-                ? 'o2-secondary-button-dark'
-                : 'o2-secondary-button-light'
-            "
-            flat
-            no-caps
-          />
-          <q-btn
+          >
+            Back
+          </OButton>
+          <OButton
             data-test="add-destination-cancel-btn"
-            class="o2-secondary-button tw:h-[36px]"
-            :label="t('alerts.cancel')"
-            flat
-            :class="
-              store.state.theme === 'dark'
-                ? 'o2-secondary-button-dark'
-                : 'o2-secondary-button-light'
-            "
-            no-caps
+            variant="outline"
+            size="sm-action"
             @click="$emit('cancel')"
-          />
-          <q-btn
+          >
+            {{ t('alerts.cancel') }}
+          </OButton>
+          <OButton
             data-test="add-destination-submit-btn"
-            :label="t('alerts.save')"
-            class="no-border q-ml-sm o2-primary-button tw:h-[36px]"
-            :class="
-              store.state.theme === 'dark'
-                ? 'o2-primary-button-dark'
-                : 'o2-primary-button-light'
-            "
-            flat
+            variant="primary"
+            size="sm-action"
             type="submit"
-            no-caps
-          />
+          >
+            {{ t('alerts.save') }}
+          </OButton>
         </div>
       </div>
     </q-form>
@@ -654,6 +662,8 @@ import { useStore } from "vuex";
 import { useQuasar } from "quasar";
 import type { DestinationData, Headers } from "@/ts/interfaces";
 import { isValidResourceName, getImageURL, getUUID } from "@/utils/zincutils";
+import OButton from "@/lib/core/Button/OButton.vue";
+import { Trash2, Plus } from "lucide-vue-next";
 
 // Props
 const props = defineProps<{

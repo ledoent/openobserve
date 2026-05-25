@@ -1,4 +1,4 @@
-<!-- Copyright 2026 OpenObserve Inc.
+﻿<!-- Copyright 2026 OpenObserve Inc.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -15,19 +15,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
 <template>
-  <q-btn
+  <OButton
     id="date-time-button"
     ref="datetimeBtn"
     data-cy="date-time-button"
-    outline
-    no-caps
-    :label="displayValue"
-    icon="schedule"
-    icon-right="arrow_drop_down"
+    variant="outline"
     class="date-time-button"
-    color=""
+    @click="isMobile ? (showMobilePicker = true) : undefined"
   >
+    <template #icon-left><q-icon name="schedule" /></template>
+    <span class="date-time-label">{{ displayValue }}</span>
+    <template #icon-right
+      ><q-icon name="arrow_drop_down" class="date-time-arrow"
+    /></template>
+    <!-- Desktop: dropdown menu -->
     <q-menu
+      v-if="!isMobile"
       no-route-dismiss
       id="date-time-menu"
       class="date-time-dialog"
@@ -35,27 +38,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       self="top left"
     >
       <div class="flex justify-evenly q-py-sm">
-        <q-btn
-          class="tab-button no-border"
-          color="primary"
-          :flat="data.selectedDate.tab !== 'relative'"
+        <OButton
+          class="tab-button"
+          :variant="
+            data.selectedDate.tab === 'relative' ? 'primary' : 'ghost-primary'
+          "
+          size="sm"
           @click="data.selectedDate.tab = 'relative'"
         >
           {{ t("common.datetimeRelative") }}
-        </q-btn>
+        </OButton>
         <q-separator vertical inset />
-        <q-btn
-          class="tab-button no-border"
-          color="primary"
-          :flat="data.selectedDate.tab !== 'absolute'"
+        <OButton
+          class="tab-button"
+          :variant="
+            data.selectedDate.tab === 'absolute' ? 'primary' : 'ghost-primary'
+          "
+          size="sm"
           @click="data.selectedDate.tab = 'absolute'"
         >
           {{ t("common.datetimeAbsolute") }}
-        </q-btn>
+        </OButton>
       </div>
       <q-separator />
-      <q-tab-panels v-model="data.selectedDate.tab" animated>
-        <q-tab-panel name="relative" class="q-pa-none">
+      <OTabPanels v-model="data.selectedDate.tab" animated>
+        <OTabPanel name="relative">
           <div class="date-time-table relative column">
             <div
               class="relative-row q-px-md q-py-sm"
@@ -66,10 +73,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 {{ period.value }}
               </div>
               <div
-                v-for="(item, item_index) in (relativeDates as any)[period.value]"
+                v-for="(item, item_index) in (relativeDates as any)[
+                  period.value
+                ]"
                 :key="item"
               >
-                <q-btn
+                <OButton
                   :class="
                     data.selectedDate.tab == 'relative' &&
                     data.selectedDate.relative.period.value == period.value &&
@@ -77,13 +86,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                       ? 'rp-selector-selected'
                       : `rp-selector ${data.selectedDate.relative.period.value}`
                   "
-                  :label="item"
-                  outline
-                  dense
-                  flat
+                  variant="ghost"
+                  size="xs"
                   @click="setRelativeDate(period, item)"
                   :key="'period_' + item_index"
-                />
+                  >{{ item }}</OButton
+                >
               </div>
             </div>
 
@@ -95,6 +103,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   <q-input
                     v-model="data.selectedDate.relative.value"
                     type="number"
+                    inputmode="numeric"
+                    enterkeyhint="next"
                     dense
                     filled
                     min="1"
@@ -113,8 +123,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </div>
             </div>
           </div>
-        </q-tab-panel>
-        <q-tab-panel name="absolute" class="q-pa-none">
+        </OTabPanel>
+        <OTabPanel name="absolute">
           <div class="date-time-table">
             <div class="flex justify-center q-pa-none">
               <q-date
@@ -141,6 +151,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     dense
                     filled
                     mask="time"
+                    inputmode="numeric"
+                    enterkeyhint="next"
                     :rules="['time']"
                   >
                     <template #append>
@@ -153,12 +165,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                             v-model="data.selectedDate.absolute.startTime"
                           >
                             <div class="row items-center justify-end">
-                              <q-btn
+                              <OButton
                                 v-close-popup="true"
-                                :label="t('common.close')"
-                                color="primary"
-                                flat
-                              />
+                                variant="ghost-primary"
+                                size="xs"
+                                >{{ t("common.close") }}</OButton
+                              >
                             </div>
                           </q-time>
                         </q-popup-proxy>
@@ -172,6 +184,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     dense
                     filled
                     mask="time"
+                    inputmode="numeric"
+                    enterkeyhint="done"
                     :rules="['time']"
                   >
                     <template #append>
@@ -182,12 +196,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                         >
                           <q-time v-model="data.selectedDate.absolute.endTime">
                             <div class="row items-center justify-end">
-                              <q-btn
+                              <OButton
                                 v-close-popup="true"
-                                :label="t('common.close')"
-                                color="primary"
-                                flat
-                              />
+                                variant="ghost-primary"
+                                size="xs"
+                                >{{ t("common.close") }}</OButton
+                              >
                             </div>
                           </q-time>
                         </q-popup-proxy>
@@ -198,20 +212,219 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               </tr>
             </table>
           </div>
-        </q-tab-panel>
-      </q-tab-panels>
+        </OTabPanel>
+      </OTabPanels>
     </q-menu>
-  </q-btn>
+  </OButton>
+
+  <!-- Mobile: bottom sheet dialog
+       NOTE: Inner tab panels are duplicated from the desktop q-menu above.
+       This is intentional — the q-menu and q-dialog have different wrapper
+       structures that prevent sharing a single template fragment. -->
+  <q-dialog
+    v-if="isMobile"
+    v-model="showMobilePicker"
+    position="bottom"
+    full-width
+    transition-show="slide-up"
+    transition-hide="slide-down"
+    aria-label="Select date and time"
+  >
+    <q-card style="max-height: 80vh; border-radius: 12px 12px 0 0">
+      <div class="mobile-sheet-handle" />
+      <q-card-section class="q-pt-none date-time-dialog" style="width: 100%">
+        <div class="flex justify-evenly q-py-sm">
+          <q-btn
+            class="tab-button no-border"
+            color="primary"
+            :flat="data.selectedDate.tab !== 'relative'"
+            @click="data.selectedDate.tab = 'relative'"
+          >
+            {{ t("common.datetimeRelative") }}
+          </q-btn>
+          <q-separator vertical inset />
+          <q-btn
+            class="tab-button no-border"
+            color="primary"
+            :flat="data.selectedDate.tab !== 'absolute'"
+            @click="data.selectedDate.tab = 'absolute'"
+          >
+            {{ t("common.datetimeAbsolute") }}
+          </q-btn>
+        </div>
+        <q-separator />
+        <q-tab-panels v-model="data.selectedDate.tab" animated>
+          <q-tab-panel name="relative" class="q-pa-none">
+            <div class="date-time-table relative column">
+              <div
+                class="relative-row q-px-md q-py-sm"
+                v-for="(period, index) in relativePeriods"
+                :key="'mobile_date_' + index"
+              >
+                <div class="relative-period-name">
+                  {{ period.value }}
+                </div>
+                <div
+                  v-for="(item, item_index) in (relativeDates as any)[period.value]"
+                  :key="item"
+                >
+                  <q-btn
+                    :class="
+                      data.selectedDate.tab == 'relative' &&
+                      data.selectedDate.relative.period.value == period.value &&
+                      data.selectedDate.relative.value == item
+                        ? 'rp-selector-selected'
+                        : `rp-selector ${data.selectedDate.relative.period.value}`
+                    "
+                    :label="item"
+                    outline
+                    dense
+                    flat
+                    @click="
+                      setRelativeDate(period, item);
+                      showMobilePicker = false;
+                    "
+                    :key="'mobile_period_' + item_index"
+                  />
+                </div>
+              </div>
+              <div class="relative-row q-px-md q-py-sm">
+                <div class="relative-period-name">Custom</div>
+                <div class="row q-gutter-sm">
+                  <div class="col">
+                    <q-input
+                      v-model="data.selectedDate.relative.value"
+                      type="number"
+                      inputmode="numeric"
+                      enterkeyhint="next"
+                      dense
+                      filled
+                      min="1"
+                      @change="calculateMaxValue"
+                    />
+                  </div>
+                  <div class="col">
+                    <q-select
+                      v-model="data.selectedDate.relative.period"
+                      :options="relativePeriods"
+                      dense
+                      filled
+                      @update:modelValue="onCustomPeriodSelect"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </q-tab-panel>
+          <q-tab-panel name="absolute" class="q-pa-none">
+            <div class="date-time-table">
+              <div class="flex justify-center q-pa-none">
+                <q-date
+                  v-model="data.selectedDate.absolute.date"
+                  class="absolute-calendar"
+                  range
+                  :locale="{
+                    daysShort: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+                  }"
+                />
+              </div>
+              <div class="notePara">{{ t("common.datetimeMessage") }}</div>
+              <q-separator class="q-my-sm" />
+              <table class="q-px-md startEndTime">
+                <tr>
+                  <td class="label">{{ t("common.startTime") }}</td>
+                  <td class="label">{{ t("common.endTime") }}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <q-input
+                      v-model="data.selectedDate.absolute.startTime"
+                      dense
+                      filled
+                      mask="time"
+                      inputmode="numeric"
+                      enterkeyhint="next"
+                      :rules="['time']"
+                    >
+                      <template #append>
+                        <q-icon name="access_time" class="cursor-pointer">
+                          <q-popup-proxy
+                            transition-show="scale"
+                            transition-hide="scale"
+                          >
+                            <q-time
+                              v-model="data.selectedDate.absolute.startTime"
+                            >
+                              <div class="row items-center justify-end">
+                                <q-btn
+                                  v-close-popup="true"
+                                  :label="t('common.close')"
+                                  color="primary"
+                                  flat
+                                />
+                              </div>
+                            </q-time>
+                          </q-popup-proxy>
+                        </q-icon>
+                      </template>
+                    </q-input>
+                  </td>
+                  <td>
+                    <q-input
+                      v-model="data.selectedDate.absolute.endTime"
+                      dense
+                      filled
+                      mask="time"
+                      inputmode="numeric"
+                      enterkeyhint="done"
+                      :rules="['time']"
+                    >
+                      <template #append>
+                        <q-icon name="access_time" class="cursor-pointer">
+                          <q-popup-proxy
+                            transition-show="scale"
+                            transition-hide="scale"
+                          >
+                            <q-time
+                              v-model="data.selectedDate.absolute.endTime"
+                            >
+                              <div class="row items-center justify-end">
+                                <q-btn
+                                  v-close-popup="true"
+                                  :label="t('common.close')"
+                                  color="primary"
+                                  flat
+                                />
+                              </div>
+                            </q-time>
+                          </q-popup-proxy>
+                        </q-icon>
+                      </template>
+                    </q-input>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </q-tab-panel>
+        </q-tab-panels>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script lang="ts">
+import OTabPanels from "@/lib/navigation/Tabs/OTabPanels.vue";
+import OTabPanel from "@/lib/navigation/Tabs/OTabPanel.vue";
+import OButton from "@/lib/core/Button/OButton.vue";
 import { ref, defineComponent, reactive, watch, computed } from "vue";
 import { getImageURL } from "../utils/zincutils";
 import { isEqual } from "lodash-es";
 import { useI18n } from "vue-i18n";
+import { useScreen } from "@/composables/useScreen";
 
 export default defineComponent({
   name: "DateTimePicker",
+  components: { OTabPanels, OTabPanel, OButton },
   props: {
     modelValue: {
       type: Object,
@@ -253,7 +466,7 @@ export default defineComponent({
     watch(selectedDateEmitValue, () => {
       Object.assign(
         data.selectedDate,
-        JSON.parse(JSON.stringify(props.modelValue))
+        JSON.parse(JSON.stringify(props.modelValue)),
       );
     });
 
@@ -366,17 +579,20 @@ export default defineComponent({
           updateEmitValue();
         }
       },
-      { deep: true }
+      { deep: true },
     );
 
     const updateEmitValue = () => {
       selectedDateEmitValue.value = JSON.parse(
-        JSON.stringify(data.selectedDate)
+        JSON.stringify(data.selectedDate),
       );
     };
 
     // on the initial call emit the value once
     updateEmitValue();
+
+    const { isMobile } = useScreen();
+    const showMobilePicker = ref(false);
 
     return {
       t,
@@ -389,6 +605,8 @@ export default defineComponent({
       displayValue,
       calculateMaxValue,
       getImageURL,
+      isMobile,
+      showMobilePicker,
     };
   },
 });
@@ -400,31 +618,26 @@ export default defineComponent({
 }
 
 .date-time-button {
+  height: 30px;
+  min-height: 30px;
   border-radius: 3px;
   padding: 0px 5px;
-  // font-size: 12px;
   min-width: auto;
+  justify-content: flex-start !important;
 
-  .q-icon.on-right {
+  .date-time-label {
+    font-weight: 600;
+    flex: 1;
+    text-align: left;
+  }
+
+  .date-time-arrow {
     transition: transform 0.25s ease;
-    color: $light-text2;
+    margin-left: auto;
   }
 
-  &.isOpen .q-icon.on-right {
+  &.isOpen .date-time-arrow {
     transform: rotate(180deg);
-  }
-
-  .q-btn__content {
-    justify-content: flex-start;
-
-    .block {
-      color: $dark-page;
-      font-weight: 600;
-
-      &::before {
-        content: "Past ";
-      }
-    }
   }
 }
 
@@ -621,5 +834,14 @@ export default defineComponent({
       color: $dark-page;
     }
   }
+}
+
+.mobile-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--o2-border-color);
+  border-radius: 2px;
+  margin: 10px auto;
+  opacity: 0.6;
 }
 </style>

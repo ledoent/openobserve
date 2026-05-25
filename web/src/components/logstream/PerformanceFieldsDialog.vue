@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 <template>
   <q-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" persistent>
-    <q-card style="min-width: 500px; max-width: 650px">
+    <q-card style="min-width: min(500px, 95vw); max-width: min(650px, 95vw)">
       <q-card-section class="row items-center q-pb-sm q-pt-md q-px-md">
         <div class="text-subtitle1 text-weight-medium">Index Fields Detected</div>
         <q-space />
@@ -70,9 +70,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </div>
       </q-card-section>
 
-      <q-card-actions align="right" class="q-pt-none q-pb-md q-px-md">
-        <q-btn flat label="Skip" class="o2-secondary-button" @click="$emit('skip')" />
-        <q-btn unelevated label="Add Fields" class="o2-primary-button" @click="$emit('add-fields')" />
+      <q-card-actions align="right" class="q-pt-none q-pb-md q-px-md tw:gap-2">
+        <OButton variant="outline" size="sm-action" @click="$emit('skip')">
+          Skip
+        </OButton>
+        <OButton variant="primary" size="sm-action" @click="$emit('add-fields')">
+          Add Fields
+        </OButton>
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -81,6 +85,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 <script lang="ts">
 import { defineComponent, computed, PropType } from "vue";
 import { useStore } from "vuex";
+import OButton from "@/lib/core/Button/OButton.vue";
 
 export interface PerformanceField {
   name: string;
@@ -89,6 +94,7 @@ export interface PerformanceField {
 
 export default defineComponent({
   name: "PerformanceFieldsDialog",
+  components: { OButton },
   props: {
     modelValue: {
       type: Boolean,

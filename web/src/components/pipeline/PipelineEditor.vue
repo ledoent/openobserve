@@ -31,46 +31,40 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
               dense
               hide-bottom-space
               class="tw:w-[300px]"
+              autocomplete="off"
+              enterkeyhint="done"
               :error="pipelineNameError"
               :error-message="pipelineNameErrorMessage"
             />
           </div>
         </div>
 
-        <div class="flex justify-end items-center">
+        <div class="tw:flex tw:items-center tw:gap-2">
           <!-- this is normal secondary button but only icon is there without label -->
-            <q-btn
-              class="pipeline-icons q-px-sm q-ml-sm hideOnPrintMode tw:h-[36px] o2-secondary-button tw:min-w-0"
-              :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
-              no-caps
-              flat
-              icon="code"
-              data-test="pipeline-json-edit-btn"
-              @click="openJsonEditor"
-            >
-                  <q-tooltip>{{ t('pipeline.editPipelineJson') }}</q-tooltip>
-                </q-btn>
-          <q-btn
+          <OButton
+            variant="outline"
+            size="icon-sm"
+            class="hideOnPrintMode"
+            data-test="pipeline-json-edit-btn"
+            @click="openJsonEditor"
+          >
+            <template #icon-left><Code2 class="tw:size-4 tw:shrink-0" /></template>
+            <q-tooltip>{{ t('pipeline.editPipelineJson') }}</q-tooltip>
+          </OButton>
+          <OButton
             data-test="add-pipeline-cancel-btn"
-            :label="t('pipeline.cancel')"
-            flat
-            class="q-ml-md o2-secondary-button tw:h-[36px]"
-            :class="store.state.theme === 'dark' ? 'o2-secondary-button-dark' : 'o2-secondary-button-light'"
-            no-caps
+            variant="outline"
+            size="sm-action"
             @click="openCancelDialog"
-          />
-
-          <q-btn
+          >{{ t('pipeline.cancel') }}</OButton>
+          <OButton
             data-test="add-pipeline-save-btn"
-            :label="t('common.save')"
-            class="q-ml-md o2-primary-button tw:h-[36px]"
-            :class="store.state.theme === 'dark' ? 'o2-primary-button-dark' : 'o2-primary-button-light'"
-            no-caps
-            flat
+            variant="primary"
+            size="sm-action"
             :loading="isPipelineSaving"
-            :disable="isPipelineSaving"
+            :disabled="isPipelineSaving"
             @click="savePipeline"
-          />
+          >{{ t('common.save') }}</OButton>
         </div>
       </div>
 
@@ -120,6 +114,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       @keydown.stop
       tabindex="0"
     >
+      <div
+        v-if="isMobile"
+        class="pipeline-editor-mobile-header"
+      >
+        <q-btn
+          data-test="pipeline-editor-mobile-close-node"
+          icon="close"
+          flat
+          round
+          dense
+          aria-label="Close"
+          @click="resetDialog"
+        />
+      </div>
       <QueryForm
         v-if="pipelineObj.dialog.name === 'query'"
         :stream-name="pipeline.stream_name"
@@ -162,14 +170,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         maximized
         :persistent="true"
       >
-        <JsonEditor
-          :data="pipelineObj.currentSelectedPipeline"
-          :title="t('pipeline.editPipelineJSON')"
-          :type="'pipelines'"
-          :validation-errors="validationErrors"
-          @close="showJsonEditorDialog = false"
-          @saveJson="savePipelineJson"
-        />
+        <div class="pipeline-json-dialog-wrap">
+          <div
+            v-if="isMobile"
+            class="pipeline-editor-mobile-header"
+          >
+            <span class="pipeline-editor-mobile-header__title">
+              {{ t('pipeline.editPipelineJSON') }}
+            </span>
+            <q-btn
+              data-test="pipeline-editor-mobile-close-json"
+              icon="close"
+              flat
+              round
+              dense
+              aria-label="Close"
+              @click="showJsonEditorDialog = false"
+            />
+          </div>
+          <JsonEditor
+            :data="pipelineObj.currentSelectedPipeline"
+            :title="t('pipeline.editPipelineJSON')"
+            :type="'pipelines'"
+            :validation-errors="validationErrors"
+            @close="showJsonEditorDialog = false"
+            @saveJson="savePipelineJson"
+          />
+        </div>
       </q-dialog>
   <confirm-dialog
     :title="confirmDialogMeta.title"
@@ -208,6 +235,8 @@ import { onBeforeRouteLeave, useRouter } from "vue-router";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import { useI18n } from "vue-i18n";
 import { useQuasar } from "quasar";
+import OButton from "@/lib/core/Button/OButton.vue";
+import { Code2, Maximize2, Minimize2 } from "lucide-vue-next";
 import jstransform from "@/services/jstransform";
 import NodeSidebar from "@/components/pipeline/NodeSidebar.vue";
 import useDragAndDrop from "@/plugins/pipelines/useDnD";
@@ -234,6 +263,9 @@ import useStreams from "@/composables/useStreams";
 import usePipelines from "@/composables/usePipelines";
 
 import config from "@/aws-exports";
+import { useScreen } from "@/composables/useScreen";
+
+const { isMobile } = useScreen();
 
 const PipelineFlow = defineAsyncComponent(
   () => import("@/plugins/pipelines/PipelineFlow.vue"),
@@ -1270,18 +1302,55 @@ const cleanupPipelinesContextProvider = () => {
   transition: none !important;
   transform: none !important;
   animation: none !important;
-  
+
   * {
     transition: none !important;
-    transform: none !important; 
+    transform: none !important;
     animation: none !important;
   }
+}
+
+.pipeline-editor-mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--o2-card-bg);
+  border-bottom: 1px solid var(--o2-border-color);
+
+  &__title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--o2-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.pipeline-json-dialog-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
 }
 </style>
 
 <style lang="scss">
 .stream-routing-dialog-container {
   min-width: 540px !important;
+}
+
+@media (max-width: 599px) {
+  .stream-routing-dialog-container {
+    min-width: 0 !important;
+    width: 100%;
+  }
 }
 
 .o2vf_node {

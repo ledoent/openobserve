@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <div class="q-table__title tw:font-[600]" data-test="alert-destinations-list-title">
             {{ t("alert_destinations.header") }}
           </div>
-          <div class="tw:flex tw:justify-end">
+          <div class="tw:flex tw:justify-end tw:gap-2">
             <q-input
               v-model="filterQuery"
               borderless
@@ -36,26 +36,71 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <q-icon class="o2-search-input-icon" name="search" />
               </template>
             </q-input>
-          <q-btn
-            class="o2-secondary-button q-ml-sm tw:h-[36px]"
-            no-caps
-            flat
-            :label="t(`dashboard.import`)"
+          <OButton
+            variant="outline"
+            size="sm"
             @click="importDestination"
             data-test="destination-import"
-          />
-          <q-btn
+          >{{ t(`dashboard.import`) }}</OButton>
+          <OButton
             data-test="alert-destination-list-add-alert-btn"
-            class="o2-primary-button q-ml-sm tw:h-[36px]"
-            no-caps
-            flat
-            :disable="!templates.length"
-            :label="t(`alert_destinations.add`)"
+            variant="primary"
+            size="sm"
+            :disabled="!templates.length"
             @click="editDestination(null)"
-          />
+          >{{ t(`alert_destinations.add`) }}</OButton>
           </div>
       </div>
+      <div
+        v-if="useCardLayout"
+        class="card-container mobile-destination-list-wrap"
+      >
+        <PullToRefreshWrapper
+          class="mobile-destination-list-scroll"
+          @refresh="onMobileRefresh"
+        >
+          <div
+            v-if="!templates.length && visibleRows.length === 0"
+            class="mobile-destination-list-empty"
+          >
+            <div class="q-mb-md">
+              It looks like you haven't created any Templates yet. To create an
+              Alert, you'll need at least one Destination and one Template in
+              place.
+            </div>
+            <q-btn
+              label="Create Template"
+              size="md"
+              color="primary"
+              no-caps
+              style="border-radius: 4px"
+              @click="routeTo('alertTemplates')"
+            />
+          </div>
+          <div
+            v-else-if="visibleRows.length === 0"
+            class="mobile-destination-list-empty"
+          >
+            <span>No destinations yet</span>
+          </div>
+          <div v-else class="mobile-destination-list">
+            <MobileDestinationCard
+              v-for="row in visibleRows"
+              :key="row.name"
+              :row="row"
+              :type-label="
+                getPrebuiltTypeName(row) || getCustomDestinationLabel(row)
+              "
+              @click="(r: any) => editDestination(r)"
+              @edit="(r: any) => editDestination(r)"
+              @export="(r: any) => exportDestination(r)"
+              @delete="(r: any) => conformDeleteDestination(r)"
+            />
+          </div>
+        </PullToRefreshWrapper>
+      </div>
       <q-table
+        v-else
         data-test="alert-destinations-list-table"
         ref="qTable"
         :rows="visibleRows"
@@ -81,15 +126,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                   an Alert, you'll need to have at least one Destination and one
                   Template in place
                 </div>
-                <q-btn
+                <OButton
+                  variant="primary"
+                  size="sm"
                   class="q-mt-md"
-                  label="Create Template"
-                  size="md"
-                  color="primary"
-                  no-caps
-                  style="border-radius: 4px"
                   @click="routeTo('alertTemplates')"
-                />
+                >Create Template</OButton>
               </template>
             </div>
           </div>
@@ -100,42 +142,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <template v-slot:body-cell-actions="props">
           <q-td :props="props">
             <div class="tw:flex tw:items-center tw:gap-1 tw:justify-center">
-              <q-btn
+              <OButton
                 data-test="destination-export"
-                padding="sm"
-                unelevated
-                size="sm"
-                round
-                flat
+                variant="ghost"
+                size="icon-circle-sm"
                 title="Export Destination"
-                icon="download"
                 @click.stop="exportDestination(props.row)"
               >
-              </q-btn>
-              <q-btn
+                <q-icon name="download" />
+              </OButton>
+              <OButton
                 :data-test="`alert-destination-list-${props.row.name}-update-destination`"
-                padding="sm"
-                unelevated
-                size="sm"
-                round
-                flat
-                icon="edit"
+                variant="ghost"
+                size="icon-circle-sm"
                 :title="t('alert_destinations.edit')"
                 @click="editDestination(props.row)"
               >
-              </q-btn>
-              <q-btn
+                <q-icon name="edit" />
+              </OButton>
+              <OButton
                 :data-test="`alert-destination-list-${props.row.name}-delete-destination`"
-                padding="sm"
-                unelevated
-                size="sm"
-                round
-                flat
-                :icon="outlinedDelete"
+                variant="ghost"
+                size="icon-circle-sm"
                 :title="t('alert_destinations.delete')"
                 @click="conformDeleteDestination(props.row)"
               >
-              </q-btn>
+                <q-icon :name="outlinedDelete" />
+              </OButton>
             </div>
           </q-td>
         </template>
@@ -186,22 +219,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <div class="o2-table-footer-title tw:flex tw:items-center tw:w-[300px] tw:mr-sm">
                   {{ resultTotal }} {{ t('alert_destinations.header') }}
                 </div>
-            <q-btn
+            <OButton
               v-if="selectedDestinations.length > 0"
               data-test="destination-list-delete-destinations-btn"
-              class="flex items-center q-mr-sm no-border o2-secondary-button tw:h-[36px]"
-              :class="
-                store.state.theme === 'dark'
-                  ? 'o2-secondary-button-dark'
-                  : 'o2-secondary-button-light'
-              "
-              no-caps
-              dense
+              variant="outline"
+              size="sm"
+              class="q-mr-sm"
               @click="openBulkDeleteDialog"
             >
               <q-icon name="delete" size="16px" />
               <span class="tw:ml-2">Delete</span>
-            </q-btn>
+            </OButton>
           <QTablePagination
             :scope="scope"
             :position="'bottom'"
@@ -272,6 +300,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </q-page>
 </template>
 <script lang="ts">
+
 import {
   ref,
   onBeforeMount,
@@ -284,6 +313,7 @@ import {
 import type { Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuasar, type QTableProps } from "quasar";
+import { useScreen } from "@/composables/useScreen";
 import NoData from "../shared/grid/NoData.vue";
 import { getImageURL } from "@/utils/zincutils";
 import AddDestination from "./AddDestination.vue";
@@ -301,6 +331,9 @@ import ImportDestination from "./ImportDestination.vue";
 import useActions from "@/composables/useActions";
 import { useReo } from "@/services/reodotdev_analytics";
 import { outlinedDelete } from "@quasar/extras/material-icons-outlined";
+import PullToRefreshWrapper from "../shared/PullToRefreshWrapper.vue";
+import MobileDestinationCard from "./MobileDestinationCard.vue";
+import OButton from '@/lib/core/Button/OButton.vue';
 
 interface ConformDelete {
   visible: boolean;
@@ -314,6 +347,9 @@ export default defineComponent({
     ConfirmDialog,
     QTablePagination,
     ImportDestination,
+    PullToRefreshWrapper,
+    MobileDestinationCard,
+    OButton,
   },
   setup() {
     const qTable = ref();
@@ -447,7 +483,7 @@ export default defineComponent({
         spinner: true,
         message: "Please wait while loading destinations...",
       });
-      destinationService
+      return destinationService
         .list({
           page_num: 1,
           page_size: 100000,
@@ -668,6 +704,16 @@ export default defineComponent({
     });
     const hasVisibleRows = computed(() => visibleRows.value.length > 0);
 
+    // Use cards up to the md breakpoint so tablets get the mobile layout too.
+    const { isMobileOrTablet: useCardLayout } = useScreen();
+    const onMobileRefresh = async (ack: () => void) => {
+      try {
+        await getDestinations();
+      } finally {
+        ack();
+      }
+    };
+
     const openBulkDeleteDialog = () => {
       confirmBulkDelete.value = true;
     };
@@ -807,7 +853,35 @@ export default defineComponent({
       selectedDestinations,
       getPrebuiltTypeName,
       getCustomDestinationLabel,
+      useCardLayout,
+      onMobileRefresh,
     };
   },
 });
 </script>
+
+<style scoped lang="scss">
+@media (max-width: 1023px) {
+  .mobile-destination-list-wrap {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mobile-destination-list-scroll {
+    height: calc(100vh - var(--navbar-height) - 92px - var(--o2-mobile-nav-height, 0px));
+  }
+
+  .mobile-destination-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px;
+  }
+
+  .mobile-destination-list-empty {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--o2-text-secondary);
+  }
+}
+</style>
