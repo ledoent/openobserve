@@ -1,0 +1,66 @@
+name: Sync main from upstream
+
+# Keeps `ledoent/openobserve:main` a strict mirror of
+# `openobserve/openobserve:main`. Matches the ledoent/fleet pattern.
+#
+# Requires repo secret `SYNC_UPSTREAM_PAT` — a fine-grained PAT on this repo
+# with `Contents: Read and write` and `Workflows: Read and write`. The default
+# `GITHUB_TOKEN` cannot force-update files under `.github/workflows/`, so a
+# user-context token is required.
+
+on:
+  schedule:
+    # Mon + Thu 06:00 UTC. Daily sync was triggering ~30 standard-30
+    # Playwright builds/month on Ubicloud — most upstream churn doesn't
+    # need that cadence on our fork.
+    - cron: "0 6 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository != 'openobserve/openobserve'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_UPSTREAM_PAT }}
+
+      - name: Sync from upstream
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/openobserve/openobserve.git || true
+          git fetch upstream main --tags
+
+          # No-op early exit: if upstream/main is already at our origin/main,
+          # skip the push so we don't trigger a downstream Playwright run for
+          # nothing.
+          if [[ "$(git rev-parse upstream/main)" == "$(git rev-parse HEAD)" ]]; then
+            echo "Already in sync with upstream/main ($(git rev-parse --short HEAD)) — skipping push."
+            exit 0
+          fi
+
+          # Paranoia: refuse to force-push if `main` has commits not in
+          # `upstream/main` from anyone other than github-actions[bot].
+          # Local work belongs on a feature branch, never on `main`.
+          unexpected=$(git log upstream/main..HEAD \
+            --pretty='%an <%ae>' \
+            | grep -v 'github-actions\[bot\]' || true)
+          if [[ -n "$unexpected" ]]; then
+            echo "::error::main has non-bot commits not in upstream/main — refusing to force-push:"
+            echo "$unexpected"
+            exit 1
+          fi
+
+          echo "Upstream has new commits — fast-forwarding origin/main:"
+          git log --oneline HEAD..upstream/main | head -20
+          git reset --hard upstream/main
+          git push --force-with-lease origin main
